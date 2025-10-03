@@ -14,7 +14,8 @@ const appState = {
     currentVideo: null,
     searchQuery: '',
     isLoading: false,
-    watchHistory: []
+    watchHistory: [],
+    autoplayEnabled: JSON.parse(localStorage.getItem('autoplayEnabled') || 'true')
 };
 
 // Load watch history from storage
@@ -26,6 +27,10 @@ function loadWatchHistory() {
 // Save watch history to storage
 function saveWatchHistory() {
     localStorage.setItem('watchHistory', JSON.stringify(appState.watchHistory));
+}
+
+function saveAutoplaySetting() {
+    localStorage.setItem('autoplayEnabled', JSON.stringify(appState.autoplayEnabled));
 }
 
 // Add video to watch history
@@ -590,6 +595,7 @@ function initializePlayerControls() {
     const backwardBtn = document.querySelector('.backward');
     const forwardBtn = document.querySelector('.forward');
     const volumeToggle = document.querySelector('.volume-toggle');
+    const autoplayToggle = document.querySelector('.autoplay-toggle');
     const progressBar = document.querySelector('.progress-bar');
     const fullscreenBtn = document.querySelector('.fullscreen');
     const currentTimeDisplay = document.querySelector('.current-time');
@@ -652,6 +658,26 @@ function initializePlayerControls() {
             document.exitFullscreen();
         }
     });
+
+    // Autoplay toggle
+    if (autoplayToggle) {
+        const icon = autoplayToggle.querySelector('i');
+        const setIcon = () => {
+            if (appState.autoplayEnabled) {
+                icon.classList.remove('fa-toggle-off');
+                icon.classList.add('fa-toggle-on');
+            } else {
+                icon.classList.remove('fa-toggle-on');
+                icon.classList.add('fa-toggle-off');
+            }
+        };
+        setIcon();
+        autoplayToggle.addEventListener('click', () => {
+            appState.autoplayEnabled = !appState.autoplayEnabled;
+            saveAutoplaySetting();
+            setIcon();
+        });
+    }
 
     // Update time display
     setInterval(() => {
@@ -875,14 +901,22 @@ function playVideo(videoId) {
     try {
         console.log('Loading video:', videoId);
         showVideoPlayer();
-        player.loadVideoById(videoId);
-        // Ensure autoplay kicks in and UI reflects playing state
-        if (player && player.playVideo) {
-            player.playVideo();
-            isPlaying = true;
+        if (appState.autoplayEnabled) {
+            player.loadVideoById(videoId);
+            if (player && player.playVideo) {
+                player.playVideo();
+                isPlaying = true;
+                const playPauseBtn = document.querySelector('.play-pause');
+                if (playPauseBtn) {
+                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                }
+            }
+        } else {
+            player.cueVideoById(videoId);
+            isPlaying = false;
             const playPauseBtn = document.querySelector('.play-pause');
             if (playPauseBtn) {
-                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
             }
         }
         hideLoading();

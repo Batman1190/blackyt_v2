@@ -645,6 +645,18 @@ body {
     justify-content: center;
 }
 
+/* Autoplay toggle styles */
+.autoplay-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.autoplay-toggle .autoplay-text {
+    font-size: 12px;
+    color: var(--primary-color);
+}
+
 .control-button:hover {
     transform: scale(1.1);
 }
