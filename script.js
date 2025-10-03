@@ -16,7 +16,8 @@ const appState = {
     isLoading: false,
     watchHistory: [],
     autoplayEnabled: JSON.parse(localStorage.getItem('autoplayEnabled') || 'false'),
-    adBlockEnabled: JSON.parse(localStorage.getItem('adBlockEnabled') || 'false')
+    adBlockEnabled: JSON.parse(localStorage.getItem('adBlockEnabled') || 'false'),
+    playerBackend: localStorage.getItem('playerBackend') || 'youtube' // 'youtube' | 'piped'
 };
 
 // Load watch history from storage
@@ -678,6 +679,19 @@ function initializePlayerControls() {
     }
 
     // Ensure adblock toggle exists (create if missing)
+    // Ensure backend toggle exists (create if missing)
+    let backendToggle = document.querySelector('.backend-toggle');
+    if (!backendToggle && controlsContainer) {
+        backendToggle = document.createElement('button');
+        backendToggle.className = 'control-button backend-toggle';
+        backendToggle.title = 'Switch Player Backend';
+        backendToggle.innerHTML = appState.playerBackend === 'piped' ? '<i class="fas fa-tv"></i>' : '<i class="fab fa-youtube"></i>';
+        const controlGroups = controlsContainer.querySelectorAll('.control-group, .controls-row');
+        const targetGroup = controlGroups[controlGroups.length - 1] || controlsContainer;
+        targetGroup.insertBefore(backendToggle, fullscreenBtn || null);
+    } else if (backendToggle) {
+        backendToggle.innerHTML = appState.playerBackend === 'piped' ? '<i class="fas fa-tv"></i>' : '<i class="fab fa-youtube"></i>';
+    }
     let adblockToggle = document.querySelector('.adblock-toggle');
     if (!adblockToggle && controlsContainer) {
         adblockToggle = document.createElement('button');
@@ -759,6 +773,23 @@ function initializePlayerControls() {
             appState.adBlockEnabled = !appState.adBlockEnabled;
             localStorage.setItem('adBlockEnabled', JSON.stringify(appState.adBlockEnabled));
             adblockToggle.innerHTML = appState.adBlockEnabled ? '<i class="fas fa-shield-halved"></i>' : '<i class="far fa-shield"></i>';
+        });
+    }
+
+    // Backend toggle
+    if (backendToggle) {
+        backendToggle.addEventListener('click', () => {
+            appState.playerBackend = appState.playerBackend === 'youtube' ? 'piped' : 'youtube';
+            localStorage.setItem('playerBackend', appState.playerBackend);
+            backendToggle.innerHTML = appState.playerBackend === 'piped' ? '<i class="fas fa-tv"></i>' : '<i class="fab fa-youtube"></i>';
+            // Update controls visibility accordingly
+            if (appState.playerBackend === 'piped') {
+                hidePlayerControls();
+            } else {
+                showPlayerControls();
+                // Ensure YT player exists
+                initYouTubePlayer();
+            }
         });
     }
 
@@ -853,6 +884,9 @@ function initYouTubePlayer() {
                     </button>
                     <button class="control-btn adblock-toggle" title="Attempt to block/mute ads">
                         ${JSON.parse(localStorage.getItem('adBlockEnabled') || 'false') ? '<i class="fas fa-shield-halved"></i>' : '<i class="far fa-shield"></i>'}
+                    </button>
+                    <button class="control-btn backend-toggle" title="Switch Player Backend">
+                        ${(localStorage.getItem('playerBackend') || 'youtube') === 'piped' ? '<i class="fas fa-tv"></i>' : '<i class="fab fa-youtube"></i>'}
                     </button>
                     <button class="control-btn autoplay-toggle" title="Toggle Autoplay">
                         ${JSON.parse(localStorage.getItem('autoplayEnabled') || 'false') ? '<i class="fas fa-toggle-on"></i>' : '<i class=\"fas fa-toggle-off\"></i>'}
@@ -1004,6 +1038,29 @@ function playVideo(videoId) {
     try {
         console.log('Loading video:', videoId);
         showVideoPlayer();
+
+        if (appState.playerBackend === 'piped') {
+            // Render Piped embed instead of YT player
+            stopAdMonitor();
+            const playerMount = document.getElementById('player');
+            if (playerMount) {
+                // Hide our custom controls (Piped has its own)
+                hidePlayerControls();
+                playerMount.innerHTML = '';
+                const iframe = document.createElement('iframe');
+                iframe.width = '100%';
+                iframe.height = '100%';
+                iframe.style.border = '0';
+                iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
+                iframe.allowFullscreen = true;
+                iframe.src = `https://piped.video/embed/${videoId}?autoplay=${appState.autoplayEnabled ? 1 : 0}`;
+                playerMount.appendChild(iframe);
+            }
+            hideLoading();
+            return;
+        }
+
+        // Default YouTube backend
         player.loadVideoById(videoId);
         hideLoading();
 
