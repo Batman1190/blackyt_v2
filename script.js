@@ -613,6 +613,7 @@ function initializePlayerControls() {
     const fullscreenBtn = document.querySelector('.fullscreen');
     const currentTimeDisplay = document.querySelector('.current-time');
     const totalTimeDisplay = document.querySelector('.total-time');
+    const playerWrapper = document.querySelector('.player-wrapper');
 
     if (!playPauseBtn || !backwardBtn || !forwardBtn || !volumeToggle || !progressBar || !fullscreenBtn) {
         console.error('Player control elements not found');
@@ -714,6 +715,23 @@ function initializePlayerControls() {
             document.exitFullscreen();
         }
     });
+
+    // Clicking anywhere in the player area counts as interaction and unmutes
+    if (playerWrapper) {
+        playerWrapper.addEventListener('click', () => {
+            appState.userInteracted = true;
+            try {
+                if (player && player.unMute) {
+                    player.unMute();
+                    player.setVolume(100);
+                    currentVolume = 1;
+                    if (volumeToggle) {
+                        volumeToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+                    }
+                }
+            } catch (_) {}
+        }, { capture: true });
+    }
 
     // Autoplay toggle
     if (autoplayToggle) {
@@ -913,6 +931,20 @@ function onPlayerReady(event) {
 
 function onPlayerStateChange(event) {
     console.log('Player State Change:', event.data);
+    // If playback starts after user action, ensure unmuted and volume up
+    if (event.data === YT.PlayerState.PLAYING && appState.userInteracted) {
+        try {
+            if (player && player.unMute) {
+                player.unMute();
+                player.setVolume(100);
+                currentVolume = 1;
+                const volumeToggle = document.querySelector('.volume-toggle');
+                if (volumeToggle) {
+                    volumeToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+                }
+            }
+        } catch (_) {}
+    }
     if (event.data === YT.PlayerState.ENDED) {
         // When video ends, if autoplay is enabled, play the next video in currentList
         if (appState.autoplayEnabled && Array.isArray(appState.currentList) && appState.currentList.length > 0) {
