@@ -769,20 +769,25 @@ function initYouTubePlayer() {
 
     console.log('Initializing YouTube player...');
     try {
+        // Build playerVars and only set origin when served over http/https (not file://)
+        const playerVars = {
+            'playsinline': 1,
+            'autoplay': 1,
+            'enablejsapi': 1,
+            'rel': 0,
+            'modestbranding': 1,
+            'showinfo': 0,
+            'controls': 0
+        };
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            playerVars.origin = window.location.origin;
+            playerVars.widget_referrer = window.location.origin;
+        }
+
         player = new YT.Player('player', {
             width: '100%',
             height: '100%',
-            playerVars: {
-                'playsinline': 1,
-                'autoplay': 1,
-                'enablejsapi': 1,
-                'origin': window.location.origin,
-                'widget_referrer': window.location.origin,
-                'rel': 0,
-                'modestbranding': 1,
-                'showinfo': 0,
-                'controls': 0
-            },
+            playerVars,
             events: {
                 'onReady': onPlayerReady,
                 'onStateChange': onPlayerStateChange,
