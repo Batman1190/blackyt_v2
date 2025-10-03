@@ -13,7 +13,7 @@
     <meta property="og:image" content="https://ramdor.space/images/logo.png">
     <meta property="og:url" content="https://ramdor.space">
     <meta name="twitter:card" content="summary_large_image">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob:; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.doubleclick.net https://*.chatango.com http://localhost:* ws://localhost:*; frame-src 'self' https: https://www.youtube.com https://*.chatango.com https://piped.video; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.chatango.com https://www.youtube.com https://www.googleapis.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob:; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.doubleclick.net https://*.chatango.com http://localhost:* ws://localhost:*; frame-src 'self' https: https://www.youtube.com https://*.chatango.com; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.chatango.com https://www.youtube.com https://www.googleapis.com;">
     <meta http-equiv="Cross-Origin-Opener-Policy" content="unsafe-none">
     <title>Black YT - Modern Video Experience</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -110,8 +110,7 @@
     <!-- Video Player -->
     <div id="video-player-container" class="video-player-container hidden">
         <div class="player-wrapper">
-            <!-- YouTube IFrame Player Mount -->
-            <div id="player" class="video-element"></div>
+            <div id="player"></div>
             <div class="player-controls">
                 <div class="control-group">
                     <button class="control-button play-pause">
