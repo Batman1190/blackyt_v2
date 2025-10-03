@@ -701,7 +701,7 @@ function initYouTubePlayer() {
             height: '100%',
             playerVars: {
                 'playsinline': 1,
-                'autoplay': 0,
+                'autoplay': 1,
                 'enablejsapi': 1,
                 'origin': window.location.origin,
                 'widget_referrer': window.location.origin,
@@ -791,6 +791,16 @@ function onPlayerReady(event) {
     player = event.target;
     initializePlayerControls();
     showPlayerControls();
+
+    // Mute to allow autoplay on most browsers
+    if (player && player.mute) {
+        player.mute();
+        currentVolume = 0;
+        const volumeToggle = document.querySelector('.volume-toggle');
+        if (volumeToggle) {
+            volumeToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
+        }
+    }
 }
 
 function onPlayerStateChange(event) {
@@ -866,6 +876,15 @@ function playVideo(videoId) {
         console.log('Loading video:', videoId);
         showVideoPlayer();
         player.loadVideoById(videoId);
+        // Ensure autoplay kicks in and UI reflects playing state
+        if (player && player.playVideo) {
+            player.playVideo();
+            isPlaying = true;
+            const playPauseBtn = document.querySelector('.play-pause');
+            if (playPauseBtn) {
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            }
+        }
         hideLoading();
     } catch (error) {
         console.error('Error playing video:', error);
