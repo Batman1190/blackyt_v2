@@ -163,6 +163,9 @@ async function fetchTrendingVideos(region = 'US') {
 
                 const data = await response.json();
                 if (data.items && data.items.length > 0) {
+                    // Track list with trending results only when we are actually showing trending
+                    appState.currentList = data.items.map(v => v.id?.videoId || v.id).filter(Boolean);
+                    appState.currentIndex = -1;
                     displayVideos(data.items);
                     return; // Success, exit the function
                 }
@@ -325,6 +328,11 @@ async function searchVideos(query) {
                 
                 // Process and display search results
                 if (data.items && data.items.length > 0) {
+                    // Track current list from search results (by ID) for correct autoplay order
+                    appState.currentList = data.items
+                        .map(item => item && item.id && item.id.videoId)
+                        .filter(Boolean);
+                    appState.currentIndex = -1;
                     data.items.forEach(item => {
                         // Convert search result format to video format
                         const video = {
@@ -521,10 +529,8 @@ async function fetchChannelIcon(channelId, videoCard) {
 // Display Videos
 function displayVideos(videos) {
     console.log(`Displaying ${videos?.length || 0} videos`);
-    
-    // Track the current list of videos (store only IDs for navigation)
-    appState.currentList = (videos || []).map(v => v.id?.videoId || v.id);
-    appState.currentIndex = -1; // reset current index when a new list is shown
+
+    // Do not override currentList here; it is set by the caller (search or trending)
 
     const videoContainer = document.getElementById('video-container');
     if (!videoContainer) {
@@ -1066,6 +1072,7 @@ function playVideo(videoId) {
     }
     // Mark user interaction since this is a click on a video card
     appState.userInteracted = true;
+    appState.currentVideo = videoId;
     // Set currentVideo and determine currentIndex
     appState.currentVideo = videoId;
     try {
