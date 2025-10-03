@@ -528,7 +528,17 @@ function displayVideos(videos) {
     videos.forEach((video, index) => {
         try {
             const videoData = video.snippet;
-    
+            const videoId = video.id?.videoId || video.id;
+            if (!videoData || !videoId) {
+                console.error(`Invalid video data at index ${index}:`, video);
+                return;
+            }
+
+            const videoCard = document.createElement('div');
+            videoCard.className = 'video-card';
+            videoCard.dataset.videoId = videoId;
+            videoCard.dataset.videoIndex = String(index);
+
             const thumbnailUrl = videoData.thumbnails?.medium?.url || videoData.thumbnails?.default?.url || 'images/placeholder.jpg';
             
             videoCard.innerHTML = `
@@ -581,18 +591,7 @@ function displayVideos(videos) {
         }
     });
 }
-                // Try to set currentIndex from the DOM or from currentList
-                try {
-                    const idxFromCard = videoCard ? parseInt(videoCard.dataset.videoIndex, 10) : NaN;
-                    if (!isNaN(idxFromCard)) {
-                        appState.currentIndex = idxFromCard;
-                    } else if (appState.currentList && appState.currentList.length > 0) {
-                        const found = appState.currentList.indexOf(videoId);
-                        appState.currentIndex = found >= 0 ? found : appState.currentIndex;
-                    }
-                } catch (e) {
-                    console.warn('Could not determine video index for autoplay:', e);
-                }
+ 
 
 // Video Player
 let player = null;
