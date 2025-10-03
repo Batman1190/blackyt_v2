@@ -15,7 +15,8 @@ const appState = {
     searchQuery: '',
     isLoading: false,
     watchHistory: [],
-    autoplayEnabled: JSON.parse(localStorage.getItem('autoplayEnabled') || 'false')
+    autoplayEnabled: JSON.parse(localStorage.getItem('autoplayEnabled') || 'false'),
+    adBlockEnabled: JSON.parse(localStorage.getItem('adBlockEnabled') || 'false')
 };
 
 // Load watch history from storage
@@ -584,7 +585,66 @@ const videoQueue = [];
 
 // Video Player Controls
 let isPlaying = false;
-let currentVolume = 1;
+let currentVolume = 100;
+let adMonitorInterval = null;
+let previousVolumeBeforeAd = 1;
+let previousPlaybackRateBeforeAd = 1;
+
+function startAdMonitor() {
+    stopAdMonitor();
+    if (!appState.adBlockEnabled || !player || !player.getCurrentTime) return;
+    try {
+        previousVolumeBeforeAd = player.getVolume ? player.getVolume() : 100;
+    } catch (e) {
+        previousVolumeBeforeAd = 100;
+    }
+    try {
+        previousPlaybackRateBeforeAd = player.getPlaybackRate ? player.getPlaybackRate() : 1;
+    } catch (e) {
+        previousPlaybackRateBeforeAd = 1;
+    }
+
+    let monitoringStartEpoch = Date.now();
+    adMonitorInterval = setInterval(() => {
+        if (!player || typeof player.getPlayerState !== 'function') return;
+        const state = player.getPlayerState();
+        // Only act while playing
+        if (state !== 1) return;
+        const elapsedSinceStartMs = Date.now() - monitoringStartEpoch;
+        const current = player.getCurrentTime ? player.getCurrentTime() : 0;
+        const duration = player.getDuration ? player.getDuration() : 0;
+
+        // Heuristic: first few seconds are often ad time; mute and speed up
+        if (current <= 6 || elapsedSinceStartMs <= 7000) {
+            try { if (player.setVolume) player.setVolume(0); currentVolume = 0; } catch (_) {}
+            try {
+                if (player.setPlaybackRate) {
+                    const rates = player.getAvailablePlaybackRates ? player.getAvailablePlaybackRates() : [1];
+                    if (rates.includes(2)) player.setPlaybackRate(2);
+                }
+            } catch (_) {}
+        } else {
+            // Restore once past initial window
+            try { if (player.setPlaybackRate) player.setPlaybackRate(previousPlaybackRateBeforeAd || 1); } catch (_) {}
+            try { if (player.setVolume) { player.setVolume(previousVolumeBeforeAd || 100); currentVolume = previousVolumeBeforeAd || 100; } } catch (_) {}
+            stopAdMonitor();
+        }
+
+        // Safety: if duration looks large and we passed 10s since start, stop monitoring
+        if (elapsedSinceStartMs > 10000 && duration > 60) {
+            try { if (player.setPlaybackRate) player.setPlaybackRate(previousPlaybackRateBeforeAd || 1); } catch (_) {}
+            try { if (player.setVolume) { player.setVolume(previousVolumeBeforeAd || 100); currentVolume = previousVolumeBeforeAd || 100; } } catch (_) {}
+            stopAdMonitor();
+        }
+    }, 500);
+}
+
+function stopAdMonitor() {
+    if (adMonitorInterval) {
+        clearInterval(adMonitorInterval);
+        adMonitorInterval = null;
+    }
+}
 
 function initializePlayerControls() {
     const playPauseBtn = document.querySelector('.play-pause');
@@ -617,6 +677,20 @@ function initializePlayerControls() {
         autoplayToggle.innerHTML = appState.autoplayEnabled ? '<i class="fas fa-toggle-on"></i>' : '<i class="fas fa-toggle-off"></i>';
     }
 
+    // Ensure adblock toggle exists (create if missing)
+    let adblockToggle = document.querySelector('.adblock-toggle');
+    if (!adblockToggle && controlsContainer) {
+        adblockToggle = document.createElement('button');
+        adblockToggle.className = 'control-button adblock-toggle';
+        adblockToggle.title = 'Attempt to block/mute ads';
+        adblockToggle.innerHTML = appState.adBlockEnabled ? '<i class="fas fa-shield-halved"></i>' : '<i class="far fa-shield"></i>';
+        const controlGroups = controlsContainer.querySelectorAll('.control-group, .controls-row');
+        const targetGroup = controlGroups[controlGroups.length - 1] || controlsContainer;
+        targetGroup.insertBefore(adblockToggle, fullscreenBtn || null);
+    } else if (adblockToggle) {
+        adblockToggle.innerHTML = appState.adBlockEnabled ? '<i class="fas fa-shield-halved"></i>' : '<i class="far fa-shield"></i>';
+    }
+
     // Play/Pause
     playPauseBtn.addEventListener('click', () => {
         if (isPlaying) {
@@ -643,12 +717,12 @@ function initializePlayerControls() {
     // Volume Control
     volumeToggle.addEventListener('click', () => {
         if (currentVolume > 0) {
-            player.setVolume(0);
+            try { player.setVolume(0); } catch (_) {}
             currentVolume = 0;
             volumeToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
         } else {
-            player.setVolume(1);
-            currentVolume = 1;
+            try { player.setVolume(100); } catch (_) {}
+            currentVolume = 100;
             volumeToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
         }
     });
@@ -676,6 +750,15 @@ function initializePlayerControls() {
             appState.autoplayEnabled = !appState.autoplayEnabled;
             localStorage.setItem('autoplayEnabled', JSON.stringify(appState.autoplayEnabled));
             autoplayToggle.innerHTML = appState.autoplayEnabled ? '<i class="fas fa-toggle-on"></i>' : '<i class="fas fa-toggle-off"></i>';
+        });
+    }
+
+    // AdBlock toggle
+    if (adblockToggle) {
+        adblockToggle.addEventListener('click', () => {
+            appState.adBlockEnabled = !appState.adBlockEnabled;
+            localStorage.setItem('adBlockEnabled', JSON.stringify(appState.adBlockEnabled));
+            adblockToggle.innerHTML = appState.adBlockEnabled ? '<i class="fas fa-shield-halved"></i>' : '<i class="far fa-shield"></i>';
         });
     }
 
@@ -734,7 +817,9 @@ function initYouTubePlayer() {
                 'rel': 0,
                 'modestbranding': 1,
                 'showinfo': 0,
-                'controls': 0
+                'controls': 0,
+                'iv_load_policy': 3,
+                'cc_load_policy': 0
             },
             events: {
                 'onReady': onPlayerReady,
@@ -765,6 +850,9 @@ function initYouTubePlayer() {
                     </button>
                     <button class="control-btn volume-toggle" title="Toggle Volume">
                         <i class="fas fa-volume-up"></i>
+                    </button>
+                    <button class="control-btn adblock-toggle" title="Attempt to block/mute ads">
+                        ${JSON.parse(localStorage.getItem('adBlockEnabled') || 'false') ? '<i class="fas fa-shield-halved"></i>' : '<i class="far fa-shield"></i>'}
                     </button>
                     <button class="control-btn autoplay-toggle" title="Toggle Autoplay">
                         ${JSON.parse(localStorage.getItem('autoplayEnabled') || 'false') ? '<i class="fas fa-toggle-on"></i>' : '<i class=\"fas fa-toggle-off\"></i>'}
@@ -841,6 +929,13 @@ function onPlayerStateChange(event) {
     if (event.data === YT.PlayerState.ENDED) {
         closeVideoPlayer();
     }
+    // Start/stop ad monitor around playback
+    if (event.data === YT.PlayerState.PLAYING) {
+        startAdMonitor();
+    }
+    if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.BUFFERING) {
+        stopAdMonitor();
+    }
 }
 
 function onPlayerError(event) {
@@ -854,6 +949,7 @@ function closeVideoPlayer() {
     if (player && player.stopVideo) {
         player.stopVideo();
     }
+    stopAdMonitor();
     const videoPlayerContainer = document.getElementById('video-player-container');
     if (videoPlayerContainer) {
         videoPlayerContainer.classList.add('hidden');
@@ -920,6 +1016,8 @@ function playVideo(videoId) {
                     playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                 }
                 isPlaying = true;
+                // Kick off ad monitoring on start
+                startAdMonitor();
             } catch (e) {
                 // Ignore if blocked
             }
