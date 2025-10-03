@@ -261,6 +261,25 @@ async function fetchRecommendedVideos() {
     return fetchTrendingVideos('US');
 }
 
+// Fetch related video IDs for a given video
+async function fetchRelatedVideoIds(videoId, maxResults = 10) {
+    try {
+        const apiKey = await YOUTUBE_CONFIG.getAPIKey();
+        const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=${maxResults}&type=video&relatedToVideoId=${encodeURIComponent(videoId)}&key=${apiKey}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        const ids = (data.items || [])
+            .map(it => it.id && it.id.videoId)
+            .filter(Boolean);
+        return ids;
+    } catch (e) {
+        console.warn('Failed to fetch related videos:', e);
+        return [];
+    }
+}
+
 async function searchVideos(query) {
     try {
         const videoContainer = document.getElementById('video-container');
@@ -946,18 +965,47 @@ function onPlayerStateChange(event) {
         } catch (_) {}
     }
     if (event.data === YT.PlayerState.ENDED) {
-        // When video ends, if autoplay is enabled, play the next video in currentList
-        if (appState.autoplayEnabled && Array.isArray(appState.currentList) && appState.currentList.length > 0) {
-            const nextIndex = (typeof appState.currentIndex === 'number' ? appState.currentIndex + 1 : 0);
-            if (nextIndex < appState.currentList.length) {
-                const nextVideoId = appState.currentList[nextIndex];
-                appState.currentIndex = nextIndex;
-                console.log('Autoplaying next video:', nextVideoId, 'index:', nextIndex);
-                playVideo(nextVideoId);
+        // When video ends, if autoplay is enabled, try related videos first
+        if (appState.autoplayEnabled) {
+            const currentId = appState.currentVideo;
+            if (currentId) {
+                fetchRelatedVideoIds(currentId, 10).then((relatedIds) => {
+                    const uniqueNext = relatedIds.find(id => id && id !== currentId);
+                    if (uniqueNext) {
+                        console.log('Autoplaying related video:', uniqueNext);
+                        playVideo(uniqueNext);
+                        return;
+                    }
+                    // Fallback to next in currentList
+                    if (Array.isArray(appState.currentList) && appState.currentList.length > 0) {
+                        const nextIndex = (typeof appState.currentIndex === 'number' ? appState.currentIndex + 1 : 0);
+                        if (nextIndex < appState.currentList.length) {
+                            const nextVideoId = appState.currentList[nextIndex];
+                            appState.currentIndex = nextIndex;
+                            console.log('Autoplaying next in list:', nextVideoId, 'index:', nextIndex);
+                            playVideo(nextVideoId);
+                            return;
+                        }
+                    }
+                    closeVideoPlayer();
+                }).catch(() => {
+                    // On error, fallback to next in list
+                    if (Array.isArray(appState.currentList) && appState.currentList.length > 0) {
+                        const nextIndex = (typeof appState.currentIndex === 'number' ? appState.currentIndex + 1 : 0);
+                        if (nextIndex < appState.currentList.length) {
+                            const nextVideoId = appState.currentList[nextIndex];
+                            appState.currentIndex = nextIndex;
+                            console.log('Autoplaying next in list (fallback):', nextVideoId, 'index:', nextIndex);
+                            playVideo(nextVideoId);
+                            return;
+                        }
+                    }
+                    closeVideoPlayer();
+                });
                 return;
             }
         }
-        // No next video or autoplay disabled — close player
+        // Autoplay disabled or no current video
         closeVideoPlayer();
     }
 }
