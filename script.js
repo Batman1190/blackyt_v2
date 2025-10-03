@@ -15,7 +15,11 @@ const appState = {
     searchQuery: '',
     isLoading: false,
     watchHistory: [],
-    autoplayEnabled: JSON.parse(localStorage.getItem('autoplayEnabled') || 'true')
+    autoplayEnabled: JSON.parse(localStorage.getItem('autoplayEnabled') || 'true'),
+    // Current list of video IDs displayed on the page (for next/previous navigation)
+    currentList: [],
+    // Index of the currently playing video within currentList
+    currentIndex: -1
 };
 
 // Load watch history from storage
@@ -498,6 +502,10 @@ async function fetchChannelIcon(channelId, videoCard) {
 function displayVideos(videos) {
     console.log(`Displaying ${videos?.length || 0} videos`);
     
+    // Track the current list of videos (store only IDs for navigation)
+    appState.currentList = (videos || []).map(v => v.id?.videoId || v.id);
+    appState.currentIndex = -1; // reset current index when a new list is shown
+
     const videoContainer = document.getElementById('video-container');
     if (!videoContainer) {
         console.error('Video container not found');
@@ -520,18 +528,7 @@ function displayVideos(videos) {
     videos.forEach((video, index) => {
         try {
             const videoData = video.snippet;
-            const videoId = video.id?.videoId || video.id;
-            
-            if (!videoData || !videoId) {
-                console.error(`Invalid video data at index ${index}:`, video);
-                return;
-            }
-            
-            const videoCard = document.createElement('div');
-            videoCard.className = 'video-card';
-            videoCard.dataset.videoId = videoId;
-            
-            // Ensure thumbnail URL exists
+    
             const thumbnailUrl = videoData.thumbnails?.medium?.url || videoData.thumbnails?.default?.url || 'images/placeholder.jpg';
             
             videoCard.innerHTML = `
@@ -562,7 +559,11 @@ function displayVideos(videos) {
             // Add click handler
             videoCard.addEventListener('click', function() {
                 const id = this.dataset.videoId;
-                console.log('Video clicked:', id);
+                const idx = parseInt(this.dataset.videoIndex, 10);
+                console.log('Video clicked:', id, 'index:', idx);
+                if (typeof idx === 'number' && !isNaN(idx)) {
+                    appState.currentIndex = idx;
+                }
                 if (id) {
                     playVideo(id);
                 }
@@ -580,6 +581,18 @@ function displayVideos(videos) {
         }
     });
 }
+                // Try to set currentIndex from the DOM or from currentList
+                try {
+                    const idxFromCard = videoCard ? parseInt(videoCard.dataset.videoIndex, 10) : NaN;
+                    if (!isNaN(idxFromCard)) {
+                        appState.currentIndex = idxFromCard;
+                    } else if (appState.currentList && appState.currentList.length > 0) {
+                        const found = appState.currentList.indexOf(videoId);
+                        appState.currentIndex = found >= 0 ? found : appState.currentIndex;
+                    }
+                } catch (e) {
+                    console.warn('Could not determine video index for autoplay:', e);
+                }
 
 // Video Player
 let player = null;
@@ -605,6 +618,40 @@ function initializePlayerControls() {
         console.error('Player control elements not found');
         return;
     }
+    
+        // Prev/Next track buttons for playlist navigation
+        const prevTrackBtn = document.querySelector('.prev-track');
+        const nextTrackBtn = document.querySelector('.next-track');
+    
+        if (prevTrackBtn) {
+            prevTrackBtn.addEventListener('click', () => {
+                if (Array.isArray(appState.currentList) && appState.currentList.length > 0) {
+                    let idx = typeof appState.currentIndex === 'number' ? appState.currentIndex : -1;
+                    if (idx <= 0) return; // no previous
+                    idx = idx - 1;
+                    const prevId = appState.currentList[idx];
+                    if (prevId) {
+                        appState.currentIndex = idx;
+                        playVideo(prevId);
+                    }
+                }
+            });
+        }
+    
+        if (nextTrackBtn) {
+            nextTrackBtn.addEventListener('click', () => {
+                if (Array.isArray(appState.currentList) && appState.currentList.length > 0) {
+                    let idx = typeof appState.currentIndex === 'number' ? appState.currentIndex : -1;
+                    const nextIdx = idx + 1;
+                    if (nextIdx >= appState.currentList.length) return; // no next
+                    const nextId = appState.currentList[nextIdx];
+                    if (nextId) {
+                        appState.currentIndex = nextIdx;
+                        playVideo(nextId);
+                    }
+                }
+            });
+        }
 
     // Play/Pause
     playPauseBtn.addEventListener('click', () => {
@@ -832,6 +879,18 @@ function onPlayerReady(event) {
 function onPlayerStateChange(event) {
     console.log('Player State Change:', event.data);
     if (event.data === YT.PlayerState.ENDED) {
+        // When video ends, if autoplay is enabled, play the next video in currentList
+        if (appState.autoplayEnabled && Array.isArray(appState.currentList) && appState.currentList.length > 0) {
+            const nextIndex = (typeof appState.currentIndex === 'number' ? appState.currentIndex + 1 : 0);
+            if (nextIndex < appState.currentList.length) {
+                const nextVideoId = appState.currentList[nextIndex];
+                appState.currentIndex = nextIndex;
+                console.log('Autoplaying next video:', nextVideoId, 'index:', nextIndex);
+                playVideo(nextVideoId);
+                return;
+            }
+        }
+        // No next video or autoplay disabled — close player
         closeVideoPlayer();
     }
 }
@@ -889,6 +948,19 @@ function playVideo(videoId) {
             channelTitle: videoCard.querySelector('.channel-name').textContent
         };
         addToHistory(videoId, videoData);
+    }
+    // Set currentVideo and determine currentIndex
+    appState.currentVideo = videoId;
+    try {
+        const idxFromCard = videoCard ? parseInt(videoCard.dataset.videoIndex, 10) : NaN;
+        if (!isNaN(idxFromCard)) {
+            appState.currentIndex = idxFromCard;
+        } else if (appState.currentList && appState.currentList.length > 0) {
+            const found = appState.currentList.indexOf(videoId);
+            appState.currentIndex = found >= 0 ? found : appState.currentIndex;
+        }
+    } catch (e) {
+        console.warn('Could not determine video index for autoplay:', e);
     }
     
     if (!playerReady || !player) {
