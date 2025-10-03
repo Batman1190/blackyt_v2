@@ -16,6 +16,7 @@ const appState = {
     isLoading: false,
     watchHistory: [],
     autoplayEnabled: JSON.parse(localStorage.getItem('autoplayEnabled') || 'true'),
+    userInteracted: false,
     // Current list of video IDs displayed on the page (for next/previous navigation)
     currentList: [],
     // Index of the currently playing video within currentList
@@ -654,6 +655,13 @@ function initializePlayerControls() {
 
     // Play/Pause
     playPauseBtn.addEventListener('click', () => {
+        appState.userInteracted = true;
+        if (player && player.unMute) {
+            player.unMute();
+            player.setVolume(100);
+            currentVolume = 1;
+            volumeToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+        }
         if (isPlaying) {
             player.pauseVideo();
             playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
@@ -677,12 +685,14 @@ function initializePlayerControls() {
 
     // Volume Control
     volumeToggle.addEventListener('click', () => {
+        appState.userInteracted = true;
         if (currentVolume > 0) {
             player.setVolume(0);
             currentVolume = 0;
             volumeToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
         } else {
-            player.setVolume(1);
+            if (player && player.unMute) player.unMute();
+            player.setVolume(100);
             currentVolume = 1;
             volumeToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
         }
@@ -869,7 +879,7 @@ function onPlayerReady(event) {
     initializePlayerControls();
     showPlayerControls();
 
-    // Mute to allow autoplay on most browsers
+    // Start muted to allow autoplay, unmute after user interaction
     if (player && player.mute) {
         player.mute();
         currentVolume = 0;
@@ -877,6 +887,27 @@ function onPlayerReady(event) {
         if (volumeToggle) {
             volumeToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
         }
+        const resumeAudioOnFirstInteraction = () => {
+            if (!appState.userInteracted) return;
+            try {
+                if (player && player.unMute) {
+                    player.unMute();
+                    player.setVolume(100);
+                    currentVolume = 1;
+                    if (volumeToggle) {
+                        volumeToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+                    }
+                }
+            } catch (_) {}
+            document.removeEventListener('click', interactionHandler, true);
+            document.removeEventListener('keydown', interactionHandler, true);
+        };
+        const interactionHandler = () => {
+            appState.userInteracted = true;
+            resumeAudioOnFirstInteraction();
+        };
+        document.addEventListener('click', interactionHandler, true);
+        document.addEventListener('keydown', interactionHandler, true);
     }
 }
 
@@ -953,6 +984,8 @@ function playVideo(videoId) {
         };
         addToHistory(videoId, videoData);
     }
+    // Mark user interaction since this is a click on a video card
+    appState.userInteracted = true;
     // Set currentVideo and determine currentIndex
     appState.currentVideo = videoId;
     try {
@@ -981,6 +1014,15 @@ function playVideo(videoId) {
             player.loadVideoById(videoId);
             if (player && player.playVideo) {
                 player.playVideo();
+                if (player && player.unMute) {
+                    player.unMute();
+                    player.setVolume(100);
+                    currentVolume = 1;
+                    const volumeToggle = document.querySelector('.volume-toggle');
+                    if (volumeToggle) {
+                        volumeToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+                    }
+                }
                 isPlaying = true;
                 const playPauseBtn = document.querySelector('.play-pause');
                 if (playPauseBtn) {

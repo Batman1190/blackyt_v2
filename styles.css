@@ -610,6 +610,8 @@ body {
     gap: 8px;
     transition: opacity 0.3s ease;
     z-index: 10;
+    /* Allow clicks to pass through the overlay except on actual controls */
+    pointer-events: none;
 }
 
 .controls-top {
@@ -643,6 +645,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Re-enable pointer events for real controls */
+    pointer-events: auto;
 }
 
 /* Autoplay toggle styles */
@@ -678,6 +682,9 @@ body {
     cursor: pointer;
     position: relative;
     margin: 0 10px;
+    /* Keep some space on the right so YouTube's Skip Ads stays clickable */
+    margin-right: 160px;
+    pointer-events: auto;
 }
 
 .progress-bar-fill {
