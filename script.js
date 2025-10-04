@@ -215,7 +215,8 @@ async function fetchTrendingVideos(region = 'US') {
                 const response = await fetch(`https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics&chart=mostPopular&regionCode=${region}&maxResults=24&key=${apiKey}`);
                 
                 if (response.status === 403) {
-                    console.log('API key quota exceeded, trying next key...');
+                    console.log('API key quota exceeded, marking key as failed and trying next key...');
+                    YOUTUBE_CONFIG.markKeyAsFailed(YOUTUBE_CONFIG.getCurrentKeyIndex());
                     lastError = 'API key quota exceeded';
                     attempts++;
                     continue;
@@ -476,7 +477,8 @@ async function searchVideosForSidebar(query) {
                 const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=6&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`);
                 
                 if (response.status === 403) {
-                    console.log('API key quota exceeded, trying next key...');
+                    console.log('API key quota exceeded, marking key as failed and trying next key...');
+                    YOUTUBE_CONFIG.markKeyAsFailed(YOUTUBE_CONFIG.getCurrentKeyIndex());
                     lastError = 'API key quota exceeded';
                     attempts++;
                     continue;
@@ -754,7 +756,8 @@ async function searchVideos(query) {
                 const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=24&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`);
                 
                 if (response.status === 403) {
-                    console.log('API key quota exceeded, trying next key...');
+                    console.log('API key quota exceeded, marking key as failed and trying next key...');
+                    YOUTUBE_CONFIG.markKeyAsFailed(YOUTUBE_CONFIG.getCurrentKeyIndex());
                     lastError = 'API key quota exceeded';
                     attempts++;
                     continue;
@@ -852,7 +855,8 @@ async function searchVideosForQueue(query) {
                 const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`);
                 
                 if (response.status === 403) {
-                    console.log('API key quota exceeded, trying next key...');
+                    console.log('API key quota exceeded, marking key as failed and trying next key...');
+                    YOUTUBE_CONFIG.markKeyAsFailed(YOUTUBE_CONFIG.getCurrentKeyIndex());
                     lastError = 'API key quota exceeded';
                     attempts++;
                     continue;
@@ -935,7 +939,8 @@ async function searchVideosForOverlay(query) {
                 const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=8&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`);
                 
                 if (response.status === 403) {
-                    console.log('API key quota exceeded, trying next key...');
+                    console.log('API key quota exceeded, marking key as failed and trying next key...');
+                    YOUTUBE_CONFIG.markKeyAsFailed(YOUTUBE_CONFIG.getCurrentKeyIndex());
                     lastError = 'API key quota exceeded';
                     attempts++;
                     continue;
@@ -2136,12 +2141,52 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// Daily reset for API keys (reset failed keys every 24 hours)
+function resetAPIKeysDaily() {
+    const lastReset = localStorage.getItem('lastAPIKeyReset');
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    
+    if (!lastReset || (now - parseInt(lastReset)) > oneDay) {
+        console.log('Performing daily API key reset...');
+        YOUTUBE_CONFIG.resetFailedKeys();
+        localStorage.setItem('lastAPIKeyReset', now.toString());
+    }
+}
+
+// Debug function to check API key status
+function debugAPIKeys() {
+    const stats = YOUTUBE_CONFIG.getUsageStats();
+    const available = YOUTUBE_CONFIG.getAvailableKeysCount();
+    const total = YOUTUBE_CONFIG.getKeyCount();
+    
+    console.log('=== API Key Status ===');
+    console.log(`Available keys: ${available}/${total}`);
+    console.log('Usage statistics:', stats);
+    
+    // Show failed keys
+    const failedKeys = Object.entries(stats)
+        .filter(([_, data]) => data.isFailed)
+        .map(([index, _]) => index);
+    
+    if (failedKeys.length > 0) {
+        console.log('Failed keys:', failedKeys.join(', '));
+    }
+}
+
+// Make debug function globally available
+window.debugAPIKeys = debugAPIKeys;
+
 // Load trending videos on page load
 console.log('Loading trending videos on page startup...');
 
 // Ensure videos load after DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, fetching trending videos...');
+    
+    // Reset API keys daily
+    resetAPIKeysDaily();
+    
     setTimeout(() => {
         fetchTrendingVideos('US');
     }, 100);
