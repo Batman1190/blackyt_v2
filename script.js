@@ -21,7 +21,7 @@ const appState = {
     currentList: [],
     // Index of the currently playing video within currentList
     currentIndex: -1,
-    // Video queue for reserved videos (max 3)
+    // Video queue for reserved videos (max 7)
     videoQueue: JSON.parse(localStorage.getItem('videoQueue') || '[]'),
     // Search results for video reservation
     searchResults: []
@@ -73,12 +73,30 @@ function updateMiniQueueDisplay() {
     }
 }
 
+// Update clear all button state
+function updateClearAllButtonState() {
+    try {
+        const clearAllBtn = document.getElementById('clear-all-queue-btn');
+        if (clearAllBtn) {
+            if (appState.videoQueue.length === 0) {
+                clearAllBtn.disabled = true;
+                clearAllBtn.title = 'No videos to clear';
+            } else {
+                clearAllBtn.disabled = false;
+                clearAllBtn.title = `Clear all ${appState.videoQueue.length} videos`;
+            }
+        }
+    } catch (error) {
+        console.error('Error updating clear all button state:', error);
+    }
+}
+
 function addToVideoQueue(videoData) {
     console.log('addToVideoQueue called with:', videoData);
     console.log('Current queue length:', appState.videoQueue.length);
     console.log('Current queue contents:', appState.videoQueue);
     
-    if (appState.videoQueue.length >= 3) {
+    if (appState.videoQueue.length >= 7) {
         console.log('Queue is full, cannot add video');
         showError('Queue is full! Remove a video first to add another.');
         return false;
@@ -97,6 +115,8 @@ function addToVideoQueue(videoData) {
     saveVideoQueue();
     updateQueueDisplay();
     updateMobileQueueBadge();
+    updateClearAllButtonState();
+    updateClearAllButtonState();
     return true;
 }
 
@@ -105,6 +125,7 @@ function removeFromVideoQueue(videoId) {
     saveVideoQueue();
     updateQueueDisplay();
     updateMobileQueueBadge();
+    updateClearAllButtonState();
 }
 
 function clearVideoQueue() {
@@ -112,6 +133,7 @@ function clearVideoQueue() {
     saveVideoQueue();
     updateQueueDisplay();
     updateMobileQueueBadge();
+    updateClearAllButtonState();
 }
 
 function getNextQueuedVideo() {
@@ -161,6 +183,14 @@ function showError(message) {
     errorDiv.textContent = message;
     document.body.appendChild(errorDiv);
     setTimeout(() => errorDiv.remove(), 5000);
+}
+
+function showSuccessMessage(message) {
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success-message';
+    successDiv.textContent = message;
+    document.body.appendChild(successDiv);
+    setTimeout(() => successDiv.remove(), 3000);
 }
 
 function escapeHtml(unsafe) {
@@ -342,7 +372,7 @@ function createSearchResultCard(item) {
     
     const thumbnailUrl = item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || 'images/placeholder.jpg';
     const isInQueue = appState.videoQueue.some(v => v.videoId === item.id.videoId);
-    const isQueueFull = appState.videoQueue.length >= 3;
+    const isQueueFull = appState.videoQueue.length >= 7;
     
     card.innerHTML = `
         <img src="${thumbnailUrl}" 
@@ -415,7 +445,7 @@ function updateQueueDisplay() {
     
     if (!queueContainer || !queueCount) return;
     
-    queueCount.textContent = `${appState.videoQueue.length}/3`;
+    queueCount.textContent = `${appState.videoQueue.length}/7`;
     
     if (appState.videoQueue.length === 0) {
         queueContainer.innerHTML = `
@@ -573,7 +603,7 @@ function createSidebarSearchCard(item) {
     
     const thumbnailUrl = item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || 'images/placeholder.jpg';
     const isInQueue = appState.videoQueue.some(v => v.videoId === item.id.videoId);
-    const isQueueFull = appState.videoQueue.length >= 3;
+    const isQueueFull = appState.videoQueue.length >= 7;
     
     card.innerHTML = `
         <img src="${thumbnailUrl}" 
@@ -655,7 +685,7 @@ function updateSidebarQueueDisplay() {
         return;
     }
     
-    sidebarQueueCount.textContent = `${appState.videoQueue.length}/3`;
+    sidebarQueueCount.textContent = `${appState.videoQueue.length}/7`;
     console.log('Updated queue count to:', sidebarQueueCount.textContent);
     
     if (appState.videoQueue.length === 0) {
@@ -1035,7 +1065,7 @@ function createOverlaySearchCard(item) {
     
     const thumbnailUrl = item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || 'images/placeholder.jpg';
     const isInQueue = appState.videoQueue.some(v => v.videoId === item.id.videoId);
-    const isQueueFull = appState.videoQueue.length >= 3;
+    const isQueueFull = appState.videoQueue.length >= 7;
     
     card.innerHTML = `
         <img src="${thumbnailUrl}" 
@@ -1336,6 +1366,38 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('Mobile queue toggle or video queue sidebar not found');
     }
 
+    // Clear all queue button
+    const clearAllQueueBtn = document.getElementById('clear-all-queue-btn');
+    if (clearAllQueueBtn) {
+        clearAllQueueBtn.addEventListener('click', (e) => {
+            try {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (appState.videoQueue.length === 0) {
+                    console.log('Queue is already empty');
+                    return;
+                }
+                
+                // Show confirmation dialog
+                const confirmed = confirm(`Are you sure you want to clear all ${appState.videoQueue.length} videos from your queue?`);
+                
+                if (confirmed) {
+                    const videoCount = appState.videoQueue.length;
+                    console.log('Clearing all videos from queue');
+                    clearVideoQueue();
+                    
+                    // Show success message
+                    showSuccessMessage(`Cleared ${videoCount} videos from queue`);
+                }
+            } catch (error) {
+                console.error('Error clearing queue:', error);
+            }
+        });
+    } else {
+        console.warn('Clear all queue button not found');
+    }
+
     // Close sidebars when clicking outside
     document.addEventListener('click', (e) => {
         try {
@@ -1364,10 +1426,10 @@ document.addEventListener('DOMContentLoaded', function() {
         saveVideoQueue();
     }
     
-    // Ensure queue doesn't exceed 3 items
-    if (appState.videoQueue.length > 3) {
-        console.log('Queue has more than 3 items, truncating...');
-        appState.videoQueue = appState.videoQueue.slice(0, 3);
+    // Ensure queue doesn't exceed 7 items
+    if (appState.videoQueue.length > 7) {
+        console.log('Queue has more than 7 items, truncating...');
+        appState.videoQueue = appState.videoQueue.slice(0, 7);
         saveVideoQueue();
     }
 
@@ -1376,6 +1438,9 @@ document.addEventListener('DOMContentLoaded', function() {
     updateMiniQueueDisplay();
     updateSidebarQueueDisplay();
     updateMobileQueueBadge();
+    
+    // Update clear all button state
+    updateClearAllButtonState();
 });
 
 // Make functions globally available
@@ -1388,6 +1453,7 @@ window.searchVideosForSidebar = searchVideosForSidebar;
 window.updateSidebarQueueDisplay = updateSidebarQueueDisplay;
 window.updateMobileQueueBadge = updateMobileQueueBadge;
 window.updateMiniQueueDisplay = updateMiniQueueDisplay;
+window.updateClearAllButtonState = updateClearAllButtonState;
 window.clearVideoQueue = clearVideoQueue;
 window.fetchTrendingVideos = fetchTrendingVideos;
 window.playVideo = playVideo;

@@ -225,6 +225,12 @@ body {
     margin: 0;
 }
 
+.queue-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .sidebar-queue-count {
     background: #3ea6ff;
     color: white;
@@ -232,6 +238,37 @@ body {
     border-radius: 12px;
     font-size: 12px;
     font-weight: 500;
+}
+
+.clear-all-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 28px;
+}
+
+.clear-all-btn:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+}
+
+.clear-all-btn:active {
+    transform: translateY(0);
+}
+
+.clear-all-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
 }
 
 /* Queue Search Section */
@@ -1199,6 +1236,33 @@ body {
 @keyframes fadeIn {
     from { opacity: 0; transform: translate(-50%, 20px); }
     to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Success Message */
+.success-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #28a745;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 /* Video Player Container */
@@ -2516,6 +2580,13 @@ body {
     .sidebar-queue-count {
         font-size: 11px;
         padding: 3px 8px;
+    }
+    
+    .clear-all-btn {
+        min-width: 28px;
+        min-height: 24px;
+        padding: 4px 6px;
+        font-size: 11px;
     }
     
     /* Mobile search improvements */

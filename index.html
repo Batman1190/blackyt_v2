@@ -108,7 +108,12 @@
         <div class="video-queue-sidebar">
             <div class="queue-sidebar-header">
                 <h3>Next Videos</h3>
-                <span id="sidebar-queue-count" class="sidebar-queue-count">0/3</span>
+                <div class="queue-header-actions">
+                    <span id="sidebar-queue-count" class="sidebar-queue-count">0/7</span>
+                    <button id="clear-all-queue-btn" class="clear-all-btn" title="Clear All Videos">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
             
             <!-- Search Section -->
@@ -212,7 +217,7 @@
             <div class="mini-queue-section">
                 <div class="mini-queue-header">
                     <h4>Reserved Videos</h4>
-                    <span id="mini-queue-count" class="mini-queue-count">0/3</span>
+                    <span id="mini-queue-count" class="mini-queue-count">0/7</span>
                 </div>
                 <div id="mini-video-queue" class="mini-video-queue">
                     <div class="mini-queue-empty">
