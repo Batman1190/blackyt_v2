@@ -1941,6 +1941,12 @@ body {
 
     .player-controls {
         padding: 15px;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+        z-index: 1001;
     }
 
     .control-button {
@@ -1965,8 +1971,10 @@ body {
     }
     
     .play-next-btn {
-        padding: 6px 10px;
+        padding: 8px 12px;
         font-size: 12px;
+        min-width: 60px;
+        min-height: 44px;
     }
     
     .play-next-btn .play-next-text {
@@ -2555,11 +2563,14 @@ body {
     .control-group {
         flex-wrap: wrap;
         gap: 8px;
+        justify-content: center;
     }
 
     .control-button {
         padding: 8px 12px;
         font-size: 14px;
+        min-width: 44px;
+        min-height: 44px;
     }
 
     /* Mobile sidebar styles */
@@ -2705,6 +2716,37 @@ body {
         padding: 6px 10px;
         min-height: 40px;
     }
+    
+    /* Extra small mobile player controls */
+    .player-wrapper {
+        padding-bottom: 100px; /* More space for controls on small screens */
+    }
+    
+    .player-controls {
+        padding: 8px;
+    }
+    
+    .control-group {
+        gap: 6px;
+    }
+    
+    .control-button {
+        padding: 6px 8px;
+        font-size: 12px;
+        min-width: 40px;
+        min-height: 40px;
+    }
+    
+    .play-next-btn {
+        padding: 6px 10px;
+        font-size: 11px;
+        min-width: 50px;
+        min-height: 40px;
+    }
+    
+    .play-next-btn .play-next-text {
+        font-size: 10px;
+    }
 }
 
 /* Touch-friendly improvements */
@@ -2780,6 +2822,12 @@ body {
     /* Mobile video player improvements */
     .video-player-container {
         padding: 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
     }
     
     .player-wrapper {
@@ -2787,6 +2835,7 @@ body {
         height: 100vh;
         max-width: none;
         max-height: none;
+        padding-bottom: 80px; /* Space for controls */
     }
     
     /* Mobile-friendly progress bar */
