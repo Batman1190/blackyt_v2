@@ -404,6 +404,71 @@ function updateQueueDisplay() {
             queueContainer.appendChild(queueItem);
         });
     }
+    
+    // Also update mini queue display
+    updateMiniQueueDisplay();
+}
+
+// Update mini queue display in overlay
+function updateMiniQueueDisplay() {
+    const miniQueueContainer = document.getElementById('mini-video-queue');
+    const miniQueueCount = document.getElementById('mini-queue-count');
+    
+    if (!miniQueueContainer || !miniQueueCount) return;
+    
+    miniQueueCount.textContent = `${appState.videoQueue.length}/3`;
+    
+    if (appState.videoQueue.length === 0) {
+        miniQueueContainer.innerHTML = `
+            <div class="mini-queue-empty">
+                <i class="fas fa-list-ul"></i>
+                <p>No videos reserved</p>
+            </div>
+        `;
+    } else {
+        miniQueueContainer.innerHTML = '';
+        appState.videoQueue.forEach((video, index) => {
+            const miniQueueItem = document.createElement('div');
+            miniQueueItem.className = 'mini-queue-item';
+            miniQueueItem.dataset.videoId = video.videoId;
+            
+            miniQueueItem.innerHTML = `
+                <img src="${video.thumbnail}" 
+                     alt="${escapeHtml(video.title)}"
+                     class="mini-queue-item-thumbnail"
+                     onerror="this.src='images/placeholder.jpg'">
+                <div class="mini-queue-item-info">
+                    <div class="mini-queue-item-title">${escapeHtml(video.title)}</div>
+                    <div class="mini-queue-item-channel">${escapeHtml(video.channelTitle)}</div>
+                </div>
+                <div class="mini-queue-item-actions">
+                    <button class="mini-queue-action-btn play" title="Play Now" data-video-id="${video.videoId}">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="mini-queue-action-btn remove" title="Remove from Queue" data-video-id="${video.videoId}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            // Add event listeners
+            const playBtn = miniQueueItem.querySelector('.play');
+            const removeBtn = miniQueueItem.querySelector('.remove');
+            
+            playBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                playVideo(video.videoId);
+                closeSearchOverlay(); // Close overlay when playing video
+            });
+            
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeFromVideoQueue(video.videoId);
+            });
+            
+            miniQueueContainer.appendChild(miniQueueItem);
+        });
+    }
 }
 
 // Add styles for error message and retry button
@@ -634,6 +699,185 @@ async function searchVideosForQueue(query) {
     }
 }
 
+// Overlay Search Functions
+async function searchVideosForOverlay(query) {
+    try {
+        const overlayResultsContainer = document.getElementById('overlay-search-results');
+        if (!overlayResultsContainer) return;
+
+        // Show loading in overlay search results
+        overlayResultsContainer.innerHTML = `
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        `;
+        overlayResultsContainer.classList.remove('hidden');
+
+        let attempts = 0;
+        const maxAttempts = YOUTUBE_CONFIG.getKeyCount();
+        let lastError = null;
+
+        while (attempts < maxAttempts) {
+            try {
+                const apiKey = await YOUTUBE_CONFIG.getAPIKey();
+                console.log(`Overlay search attempt ${attempts + 1}/${maxAttempts} with API key index: ${YOUTUBE_CONFIG.getCurrentKeyIndex()}`);
+
+                const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=8&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`);
+                
+                if (response.status === 403) {
+                    console.log('API key quota exceeded, trying next key...');
+                    lastError = 'API key quota exceeded';
+                    attempts++;
+                    continue;
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Clear loading state
+                overlayResultsContainer.innerHTML = '';
+                
+                // Process and display search results for overlay
+                if (data.items && data.items.length > 0) {
+                    data.items.forEach(item => {
+                        const overlaySearchCard = createOverlaySearchCard(item);
+                        overlayResultsContainer.appendChild(overlaySearchCard);
+                    });
+                } else {
+                    overlayResultsContainer.innerHTML = '<div class="no-results">No videos found</div>';
+                }
+                
+                return; // Success, exit the function
+            } catch (error) {
+                console.error('Error with current API key:', error);
+                lastError = error.message;
+                attempts++;
+            }
+        }
+
+        // If we get here, all attempts failed
+        throw new Error(`Failed to search videos after ${maxAttempts} attempts. Last error: ${lastError}`);
+
+    } catch (error) {
+        console.error('Overlay search error:', error);
+        const errorMessage = error.message === 'All API keys exhausted'
+            ? 'Unable to perform search. Please try again later.'
+            : 'Failed to search videos. Please try again.';
+        
+        const overlayResultsContainer = document.getElementById('overlay-search-results');
+        if (overlayResultsContainer) {
+            overlayResultsContainer.innerHTML = `
+                <div class="error-message">
+                    <p>${errorMessage}</p>
+                    <button onclick="searchVideosForOverlay('${encodeURIComponent(query)}')" class="retry-button">
+                        Retry Search
+                    </button>
+                </div>
+            `;
+        }
+    }
+}
+
+// Create overlay search result card
+function createOverlaySearchCard(item) {
+    const card = document.createElement('div');
+    card.className = 'search-result-card';
+    card.dataset.videoId = item.id.videoId;
+    
+    const thumbnailUrl = item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || 'images/placeholder.jpg';
+    const isInQueue = appState.videoQueue.some(v => v.videoId === item.id.videoId);
+    const isQueueFull = appState.videoQueue.length >= 3;
+    
+    card.innerHTML = `
+        <img src="${thumbnailUrl}" 
+             alt="${escapeHtml(item.snippet.title)}"
+             class="search-result-thumbnail"
+             onerror="this.src='images/placeholder.jpg'">
+        <div class="search-result-title">${escapeHtml(item.snippet.title)}</div>
+        <div class="search-result-channel">${escapeHtml(item.snippet.channelTitle)}</div>
+        <div class="search-result-actions">
+            <button class="add-to-queue-btn" 
+                    ${isInQueue || isQueueFull ? 'disabled' : ''}
+                    data-video-id="${item.id.videoId}">
+                <i class="fas fa-plus"></i>
+                ${isInQueue ? 'In Queue' : isQueueFull ? 'Queue Full' : 'Add to Queue'}
+            </button>
+            <button class="play-now-btn" data-video-id="${item.id.videoId}">
+                <i class="fas fa-play"></i>
+                Play Now
+            </button>
+        </div>
+    `;
+    
+    // Add event listeners
+    const addToQueueBtn = card.querySelector('.add-to-queue-btn');
+    const playNowBtn = card.querySelector('.play-now-btn');
+    
+    addToQueueBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!addToQueueBtn.disabled) {
+            const videoData = {
+                videoId: item.id.videoId,
+                title: item.snippet.title,
+                channelTitle: item.snippet.channelTitle,
+                thumbnail: thumbnailUrl,
+                publishedAt: item.snippet.publishedAt
+            };
+            
+            if (addToVideoQueue(videoData)) {
+                addToQueueBtn.innerHTML = '<i class="fas fa-check"></i> Added!';
+                addToQueueBtn.disabled = true;
+                addToQueueBtn.style.background = '#28a745';
+                updateMiniQueueDisplay(); // Update mini queue in overlay
+            }
+        }
+    });
+    
+    playNowBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playVideo(item.id.videoId);
+        closeSearchOverlay(); // Close overlay when playing video
+    });
+    
+    return card;
+}
+
+// Search Overlay Functions
+function showSearchOverlay() {
+    const searchOverlay = document.getElementById('search-overlay');
+    if (searchOverlay) {
+        searchOverlay.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        // Focus on search input
+        const searchInput = document.getElementById('overlay-search-input');
+        if (searchInput) {
+            setTimeout(() => searchInput.focus(), 100);
+        }
+    }
+}
+
+function closeSearchOverlay() {
+    const searchOverlay = document.getElementById('search-overlay');
+    if (searchOverlay) {
+        searchOverlay.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        // Clear search results
+        const overlayResults = document.getElementById('overlay-search-results');
+        if (overlayResults) {
+            overlayResults.innerHTML = '';
+            overlayResults.classList.add('hidden');
+        }
+        // Clear search input
+        const searchInput = document.getElementById('overlay-search-input');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+    }
+}
+
 // Add event listeners for search
 document.addEventListener('DOMContentLoaded', function() {
     // Existing search listeners
@@ -643,6 +887,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Video search for queue listeners
     const videoSearchInput = document.getElementById('video-search-input');
     const videoSearchButton = document.getElementById('video-search-btn');
+
+    // Overlay search listeners
+    const overlaySearchInput = document.getElementById('overlay-search-input');
+    const overlaySearchButton = document.getElementById('overlay-search-btn');
+    const searchQueueBtn = document.querySelector('.search-queue-btn');
+    const closeSearchOverlayBtn = document.getElementById('close-search-overlay');
 
     // Add region selector listener
     const regionSelect = document.getElementById('region-select');
@@ -725,6 +975,47 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Overlay search listeners
+    if (searchQueueBtn) {
+        searchQueueBtn.addEventListener('click', () => {
+            showSearchOverlay();
+        });
+    }
+
+    if (closeSearchOverlayBtn) {
+        closeSearchOverlayBtn.addEventListener('click', () => {
+            closeSearchOverlay();
+        });
+    }
+
+    if (overlaySearchButton && overlaySearchInput) {
+        overlaySearchButton.addEventListener('click', () => {
+            const query = overlaySearchInput.value.trim();
+            if (query) {
+                searchVideosForOverlay(query);
+            }
+        });
+
+        overlaySearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const query = overlaySearchInput.value.trim();
+                if (query) {
+                    searchVideosForOverlay(query);
+                }
+            }
+        });
+    }
+
+    // Close overlay when clicking outside
+    const searchOverlay = document.getElementById('search-overlay');
+    if (searchOverlay) {
+        searchOverlay.addEventListener('click', (e) => {
+            if (e.target === searchOverlay) {
+                closeSearchOverlay();
+            }
+        });
+    }
+
     // Initialize queue display
     updateQueueDisplay();
 });
@@ -732,6 +1023,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // Make functions globally available
 window.searchVideos = searchVideos;
 window.searchVideosForQueue = searchVideosForQueue;
+window.searchVideosForOverlay = searchVideosForOverlay;
+window.showSearchOverlay = showSearchOverlay;
+window.closeSearchOverlay = closeSearchOverlay;
 window.fetchTrendingVideos = fetchTrendingVideos;
 window.playVideo = playVideo;
 window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;

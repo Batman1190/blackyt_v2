@@ -169,6 +169,10 @@
                         <i class="fas fa-toggle-off"></i>
                         <span class="autoplay-text">Autoplay</span>
                     </button>
+                    <button class="control-button search-queue-btn" title="Search & Reserve Videos">
+                        <i class="fas fa-search"></i>
+                        <span class="search-text">Search</span>
+                    </button>
                     <div class="volume-control">
                         <button class="control-button volume-toggle">
                             <i class="fas fa-volume-up"></i>
@@ -182,6 +186,41 @@
             <button id="back-to-home" class="back-btn">
                 <i class="material-icons">arrow_back</i>
             </button>
+        </div>
+    </div>
+
+    <!-- Search Overlay -->
+    <div id="search-overlay" class="search-overlay hidden">
+        <div class="search-overlay-content">
+            <div class="search-overlay-header">
+                <h3>Search & Reserve Videos</h3>
+                <button id="close-search-overlay" class="close-overlay-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="search-overlay-controls">
+                <div class="search-input-group">
+                    <input type="text" id="overlay-search-input" placeholder="Search for videos to reserve...">
+                    <button id="overlay-search-btn" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="overlay-search-results" class="overlay-search-results hidden"></div>
+            
+            <!-- Mini Queue Display -->
+            <div class="mini-queue-section">
+                <div class="mini-queue-header">
+                    <h4>Reserved Videos</h4>
+                    <span id="mini-queue-count" class="mini-queue-count">0/3</span>
+                </div>
+                <div id="mini-video-queue" class="mini-video-queue">
+                    <div class="mini-queue-empty">
+                        <i class="fas fa-list-ul"></i>
+                        <p>No videos reserved</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
