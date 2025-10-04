@@ -664,6 +664,17 @@ body {
     display: none;
 }
 
+/* Desktop-specific show sidebar button */
+@media (min-width: 769px) {
+    .show-sidebar-btn {
+        display: flex;
+    }
+    
+    .show-sidebar-btn.hidden {
+        display: none;
+    }
+}
+
 .shortcut-links {
     padding: 20px 0;
 }
@@ -2378,9 +2389,14 @@ body {
         pointer-events: none;
     }
     
-    /* Hide show sidebar button on mobile when sidebar is hidden */
+    /* Hide show sidebar button on mobile - use mobile queue toggle instead */
     .show-sidebar-btn {
         display: none !important;
+    }
+    
+    /* Ensure mobile queue toggle is always visible when sidebar is hidden */
+    .mobile-queue-toggle {
+        display: flex !important;
     }
     
     /* Mobile queue sidebar close button */

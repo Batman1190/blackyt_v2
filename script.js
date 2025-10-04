@@ -1424,8 +1424,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.stopPropagation();
                 
                 const isActive = videoQueueSidebar.classList.contains('active');
+                const isHidden = videoQueueSidebar.classList.contains('hidden');
                 
-                if (isActive) {
+                if (isHidden) {
+                    // If sidebar is hidden, show it first
+                    showSidebar();
+                    // Then activate it for mobile
+                    videoQueueSidebar.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                } else if (isActive) {
                     // Close the queue sidebar
                     videoQueueSidebar.classList.remove('active');
                     document.body.style.overflow = 'auto';
@@ -1439,7 +1446,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
-                console.log('Mobile queue toggled, active:', !isActive);
+                console.log('Mobile queue toggled, active:', !isActive, 'hidden:', isHidden);
             } catch (error) {
                 console.error('Error toggling mobile queue:', error);
             }
@@ -1589,6 +1596,14 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         showSidebar();
     }
+    
+    // Add keyboard shortcut to toggle sidebar (Ctrl/Cmd + B)
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+            e.preventDefault();
+            toggleSidebarVisibility();
+        }
+    });
 });
 
 // Make functions globally available
@@ -1609,6 +1624,25 @@ window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
 window.hideSidebar = hideSidebar;
 window.showSidebar = showSidebar;
 window.toggleSidebarVisibility = toggleSidebarVisibility;
+
+// Debug function to check sidebar state
+window.debugSidebar = function() {
+    const videoQueueSidebar = document.querySelector('.video-queue-sidebar');
+    const showSidebarBtn = document.getElementById('show-sidebar-btn');
+    const hideSidebarBtn = document.getElementById('hide-sidebar-btn');
+    
+    console.log('=== Sidebar Debug Info ===');
+    console.log('Sidebar element:', videoQueueSidebar);
+    console.log('Show button element:', showSidebarBtn);
+    console.log('Hide button element:', hideSidebarBtn);
+    console.log('Sidebar classes:', videoQueueSidebar ? videoQueueSidebar.className : 'Not found');
+    console.log('Show button classes:', showSidebarBtn ? showSidebarBtn.className : 'Not found');
+    console.log('App state sidebarHidden:', appState.sidebarHidden);
+    console.log('Show button display style:', showSidebarBtn ? getComputedStyle(showSidebarBtn).display : 'Not found');
+    console.log('Show button visibility:', showSidebarBtn ? getComputedStyle(showSidebarBtn).visibility : 'Not found');
+    console.log('Window width:', window.innerWidth);
+    console.log('Is mobile:', window.innerWidth <= 768);
+};
 
 async function fetchVideoStatistics(videoId, videoCard) {
     try {
