@@ -2055,6 +2055,16 @@ function closeVideoPlayer() {
         videoPlayerContainer.classList.add('hidden');
         document.body.style.overflow = 'auto';
     }
+    // If we auto-opened the mobile queue sidebar when the player opened, close it now
+    try {
+        if (window.innerWidth <= 768) {
+            const mobileQueueSidebar = document.querySelector('.video-queue-sidebar');
+            if (mobileQueueSidebar && mobileQueueSidebar.dataset.autoOpened === 'true') {
+                mobileQueueSidebar.classList.remove('active');
+                delete mobileQueueSidebar.dataset.autoOpened;
+            }
+        }
+    } catch (_) { /* noop */ }
     // Reset player state
     isPlaying = false;
     const playPauseBtn = document.querySelector('.play-pause');
@@ -2068,6 +2078,23 @@ function showVideoPlayer() {
         videoPlayerContainer.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
+    // On mobile, surface the Next Videos sidebar above the player overlay
+    try {
+        if (window.innerWidth <= 768) {
+            const mobileQueueSidebar = document.querySelector('.video-queue-sidebar');
+            const mainSidebar = document.querySelector('.sidebar');
+            // Ensure the main nav sidebar is closed to avoid overlap
+            if (mainSidebar) {
+                mainSidebar.classList.remove('active');
+            }
+            // Open the queue sidebar if it's not already visible
+            if (mobileQueueSidebar && !mobileQueueSidebar.classList.contains('active')) {
+                mobileQueueSidebar.classList.add('active');
+                // Mark that we opened it programmatically so we can restore state on close
+                mobileQueueSidebar.dataset.autoOpened = 'true';
+            }
+        }
+    } catch (_) { /* noop */ }
 }
 
 function playVideo(videoId) {
