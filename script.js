@@ -851,15 +851,29 @@ function updateSidebarQueueDisplay() {
             const playBtn = sidebarQueueItem.querySelector('.play');
             const removeBtn = sidebarQueueItem.querySelector('.remove');
             
-            playBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                playVideo(video.videoId);
-            });
+            console.log('Setting up sidebar queue item buttons for:', video.title);
+            console.log('Play button found:', !!playBtn);
+            console.log('Remove button found:', !!removeBtn);
             
-            removeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                removeFromVideoQueue(video.videoId);
-            });
+            if (playBtn) {
+                playBtn.addEventListener('click', (e) => {
+                    console.log('Play button clicked for:', video.title);
+                    e.stopPropagation();
+                    playVideo(video.videoId);
+                });
+            } else {
+                console.warn('Play button not found for video:', video.title);
+            }
+            
+            if (removeBtn) {
+                removeBtn.addEventListener('click', (e) => {
+                    console.log('Remove button clicked for:', video.title);
+                    e.stopPropagation();
+                    removeFromVideoQueue(video.videoId);
+                });
+            } else {
+                console.warn('Remove button not found for video:', video.title);
+            }
             
             sidebarQueueContainer.appendChild(sidebarQueueItem);
         });
@@ -1361,20 +1375,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add back button listener
     const backButton = document.getElementById('back-to-home');
     if (backButton) {
-        backButton.addEventListener('click', () => {
+        backButton.addEventListener('click', (e) => {
+            console.log('Back button clicked');
+            e.preventDefault();
+            e.stopPropagation();
             closeVideoPlayer();
             // Optionally refresh the video list
             fetchTrendingVideos('US');
         });
+        
+        // Add debugging info
+        console.log('Back button element:', backButton);
+        console.log('Back button styles:', backButton ? getComputedStyle(backButton) : 'Not found');
+    } else {
+        console.warn('Back button not found!');
     }
 
-    // Close player button listener
-    const closePlayerBtn = document.getElementById('close-player');
-    if (closePlayerBtn) {
-        closePlayerBtn.addEventListener('click', () => {
-            closeVideoPlayer();
-        });
-    }
+    // Note: close-player button removed - using back-to-home button instead
 
     // Existing search listeners
     if (searchButton && searchInput) {
@@ -1666,6 +1683,15 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             playNextVideo();
         }
+        
+        // Close video player (Escape key)
+        if (e.key === 'Escape') {
+            const videoPlayerContainer = document.getElementById('video-player-container');
+            if (videoPlayerContainer && !videoPlayerContainer.classList.contains('hidden')) {
+                e.preventDefault();
+                closeVideoPlayer();
+            }
+        }
     });
 });
 
@@ -1707,6 +1733,45 @@ window.debugSidebar = function() {
     console.log('Show button visibility:', showSidebarBtn ? getComputedStyle(showSidebarBtn).visibility : 'Not found');
     console.log('Window width:', window.innerWidth);
     console.log('Is mobile:', window.innerWidth <= 768);
+};
+
+// Debug function to check video player close button
+window.debugCloseButton = function() {
+    const backButton = document.getElementById('back-to-home');
+    const videoPlayerContainer = document.getElementById('video-player-container');
+    
+    console.log('=== Close Button Debug Info ===');
+    console.log('Back button element:', backButton);
+    console.log('Video player container:', videoPlayerContainer);
+    console.log('Back button classes:', backButton ? backButton.className : 'Not found');
+    console.log('Back button display style:', backButton ? getComputedStyle(backButton).display : 'Not found');
+    console.log('Back button visibility:', backButton ? getComputedStyle(backButton).visibility : 'Not found');
+    console.log('Back button z-index:', backButton ? getComputedStyle(backButton).zIndex : 'Not found');
+    console.log('Back button pointer-events:', backButton ? getComputedStyle(backButton).pointerEvents : 'Not found');
+    console.log('Video player hidden:', videoPlayerContainer ? videoPlayerContainer.classList.contains('hidden') : 'Not found');
+};
+
+// Debug function to check sidebar queue buttons
+window.debugQueueButtons = function() {
+    const queueItems = document.querySelectorAll('.sidebar-queue-item');
+    console.log('=== Sidebar Queue Buttons Debug Info ===');
+    console.log('Queue items found:', queueItems.length);
+    
+    queueItems.forEach((item, index) => {
+        const playBtn = item.querySelector('.sidebar-queue-action-btn.play');
+        const removeBtn = item.querySelector('.sidebar-queue-action-btn.remove');
+        const videoId = item.dataset.videoId;
+        
+        console.log(`Item ${index + 1}:`, {
+            videoId: videoId,
+            playButton: !!playBtn,
+            removeButton: !!removeBtn,
+            playButtonClasses: playBtn ? playBtn.className : 'Not found',
+            removeButtonClasses: removeBtn ? removeBtn.className : 'Not found',
+            playButtonPointerEvents: playBtn ? getComputedStyle(playBtn).pointerEvents : 'Not found',
+            removeButtonPointerEvents: removeBtn ? getComputedStyle(removeBtn).pointerEvents : 'Not found'
+        });
+    });
 };
 
 async function fetchVideoStatistics(videoId, videoCard) {
