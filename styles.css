@@ -60,7 +60,7 @@ body {
     align-items: center;
     padding: 10px 2%;
     justify-content: space-between;
-    z-index: 100;
+    z-index: 1000;
 }
 
 .nav-left {
@@ -2190,6 +2190,7 @@ body {
     cursor: pointer;
     padding: 8px;
     position: relative;
+    z-index: 1001;
 }
 
 .queue-badge {
@@ -2226,6 +2227,26 @@ body {
     .mobile-queue-toggle {
         display: block;
     }
+    
+    /* Ensure mobile queue toggle is visible and clickable */
+    .mobile-queue-toggle {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        transition: background-color 0.2s ease;
+    }
+    
+    .mobile-queue-toggle:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .mobile-queue-toggle:active {
+        background: rgba(255, 255, 255, 0.3);
+    }
 
     /* Hide desktop sidebar by default */
     .sidebar {
@@ -2243,11 +2264,56 @@ body {
         transform: translateX(100%);
         width: 100%;
         max-width: 400px;
-        z-index: 1001;
+        z-index: 1002;
+        transition: transform 0.3s ease;
     }
 
     .video-queue-sidebar.active {
         transform: translateX(0);
+    }
+    
+    /* Add mobile overlay for video queue sidebar */
+    .video-queue-sidebar::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: -1;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+    
+    .video-queue-sidebar.active::before {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    
+    /* Mobile queue sidebar close button */
+    .video-queue-sidebar .queue-sidebar-header::after {
+        content: '×';
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        font-size: 24px;
+        color: var(--primary-color);
+        cursor: pointer;
+        z-index: 1003;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        transition: background-color 0.2s ease;
+    }
+    
+    .video-queue-sidebar .queue-sidebar-header::after:hover {
+        background: rgba(255, 255, 255, 0.2);
     }
 
     /* Full width content on mobile */

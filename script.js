@@ -1352,12 +1352,25 @@ document.addEventListener('DOMContentLoaded', function() {
         mobileQueueToggle.addEventListener('click', (e) => {
             try {
                 e.preventDefault();
-                videoQueueSidebar.classList.toggle('active');
-                // Close main sidebar if open
-                if (sidebar) {
-                    sidebar.classList.remove('active');
+                e.stopPropagation();
+                
+                const isActive = videoQueueSidebar.classList.contains('active');
+                
+                if (isActive) {
+                    // Close the queue sidebar
+                    videoQueueSidebar.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                } else {
+                    // Open the queue sidebar
+                    videoQueueSidebar.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    // Close main sidebar if open
+                    if (sidebar) {
+                        sidebar.classList.remove('active');
+                    }
                 }
-                console.log('Mobile queue toggled');
+                
+                console.log('Mobile queue toggled, active:', !isActive);
             } catch (error) {
                 console.error('Error toggling mobile queue:', error);
             }
@@ -1406,11 +1419,38 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (videoQueueSidebar && mobileQueueToggle && !videoQueueSidebar.contains(e.target) && !mobileQueueToggle.contains(e.target)) {
                 videoQueueSidebar.classList.remove('active');
+                document.body.style.overflow = 'auto';
             }
         } catch (error) {
             console.error('Error handling click outside:', error);
         }
     });
+    
+    // Handle mobile queue sidebar close button
+    if (videoQueueSidebar) {
+        const queueHeader = videoQueueSidebar.querySelector('.queue-sidebar-header');
+        if (queueHeader) {
+            queueHeader.addEventListener('click', (e) => {
+                // Check if click is on the close button (::after pseudo-element)
+                const rect = queueHeader.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+                
+                // Close button is positioned at right: 15px, top: 10px with 30px width/height
+                const closeButtonX = rect.width - 15 - 30; // right: 15px + width: 30px
+                const closeButtonY = 10; // top: 10px
+                
+                if (clickX >= closeButtonX && clickX <= closeButtonX + 30 && 
+                    clickY >= closeButtonY && clickY <= closeButtonY + 30) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    videoQueueSidebar.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                    console.log('Mobile queue sidebar closed via close button');
+                }
+            });
+        }
+    }
 
     // Functions are now defined at the top of the file
 
