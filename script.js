@@ -982,7 +982,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Player search listeners
     if (playerSearchButton && playerSearchInput) {
-        playerSearchButton.addEventListener('click', () => {
+        playerSearchButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent event from reaching video player
             const query = playerSearchInput.value.trim();
             if (query) {
                 showSearchOverlay(query);
@@ -995,7 +996,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        playerSearchInput.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent event from reaching video player
+        });
+
         playerSearchInput.addEventListener('keypress', (e) => {
+            e.stopPropagation(); // Prevent event from reaching video player
             if (e.key === 'Enter') {
                 const query = playerSearchInput.value.trim();
                 if (query) {
@@ -1008,6 +1014,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     showSearchOverlay();
                 }
             }
+        });
+
+        playerSearchInput.addEventListener('focus', (e) => {
+            e.stopPropagation(); // Prevent event from reaching video player
+        });
+
+        playerSearchInput.addEventListener('input', (e) => {
+            e.stopPropagation(); // Prevent event from reaching video player
         });
     }
 

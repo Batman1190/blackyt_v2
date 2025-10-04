@@ -1235,6 +1235,7 @@ body {
     z-index: 15;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     position: relative;
+    pointer-events: auto;
 }
 
 .player-search-container:focus-within {
@@ -1254,6 +1255,7 @@ body {
     padding: 8px 12px;
     min-width: 0;
     font-weight: 500;
+    pointer-events: auto;
 }
 
 .player-search-input::placeholder {
@@ -1277,6 +1279,7 @@ body {
     width: 32px;
     height: 32px;
     box-shadow: 0 2px 8px rgba(255, 107, 0, 0.3);
+    pointer-events: auto;
 }
 
 .player-search-btn:hover {
