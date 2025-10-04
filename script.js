@@ -160,6 +160,26 @@ function updateClearAllButtonState() {
     }
 }
 
+// Update Play Next button state
+function updatePlayNextButtonState() {
+    try {
+        const playNextBtn = document.getElementById('play-next-btn');
+        if (playNextBtn) {
+            if (appState.videoQueue.length === 0) {
+                playNextBtn.disabled = true;
+                playNextBtn.title = 'No videos in queue';
+                playNextBtn.style.opacity = '0.6';
+            } else {
+                playNextBtn.disabled = false;
+                playNextBtn.title = `Play next video (${appState.videoQueue.length} in queue)`;
+                playNextBtn.style.opacity = '1';
+            }
+        }
+    } catch (error) {
+        console.error('Error updating play next button state:', error);
+    }
+}
+
 function addToVideoQueue(videoData) {
     console.log('addToVideoQueue called with:', videoData);
     console.log('Current queue length:', appState.videoQueue.length);
@@ -185,7 +205,7 @@ function addToVideoQueue(videoData) {
     updateQueueDisplay();
     updateMobileQueueBadge();
     updateClearAllButtonState();
-    updateClearAllButtonState();
+    updatePlayNextButtonState();
     return true;
 }
 
@@ -195,6 +215,7 @@ function removeFromVideoQueue(videoId) {
     updateQueueDisplay();
     updateMobileQueueBadge();
     updateClearAllButtonState();
+    updatePlayNextButtonState();
 }
 
 function clearVideoQueue() {
@@ -203,6 +224,7 @@ function clearVideoQueue() {
     updateQueueDisplay();
     updateMobileQueueBadge();
     updateClearAllButtonState();
+    updatePlayNextButtonState();
 }
 
 function getNextQueuedVideo() {
@@ -212,6 +234,37 @@ function getNextQueuedVideo() {
         return nextVideo;
     }
     return null;
+}
+
+// Play next video from queue
+function playNextVideo() {
+    console.log('Play Next button clicked');
+    
+    // Check if there are videos in the queue
+    if (appState.videoQueue.length === 0) {
+        showError('No videos in queue! Add videos to your queue first.');
+        return;
+    }
+    
+    // Get the next video from queue
+    const nextVideo = getNextQueuedVideo();
+    if (nextVideo) {
+        console.log('Playing next video from queue:', nextVideo.title);
+        
+        // Play the next video
+        playVideo(nextVideo.videoId);
+        
+        // Update all queue displays
+        updateQueueDisplay();
+        updateMiniQueueDisplay();
+        updateSidebarQueueDisplay();
+        updateMobileQueueBadge();
+        
+        // Show success message
+        showSuccessMessage(`Now playing: ${nextVideo.title}`);
+    } else {
+        showError('No videos available in queue!');
+    }
 }
 
 // Add video to watch history
@@ -1590,6 +1643,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update clear all button state
     updateClearAllButtonState();
     
+    // Update play next button state
+    updatePlayNextButtonState();
+    
     // Initialize sidebar visibility state
     if (appState.sidebarHidden) {
         hideSidebar();
@@ -1597,11 +1653,18 @@ document.addEventListener('DOMContentLoaded', function() {
         showSidebar();
     }
     
-    // Add keyboard shortcut to toggle sidebar (Ctrl/Cmd + B)
+    // Add keyboard shortcuts
     document.addEventListener('keydown', (e) => {
+        // Toggle sidebar (Ctrl/Cmd + B)
         if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
             e.preventDefault();
             toggleSidebarVisibility();
+        }
+        
+        // Play next video (Ctrl/Cmd + N)
+        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+            e.preventDefault();
+            playNextVideo();
         }
     });
 });
@@ -1624,6 +1687,8 @@ window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
 window.hideSidebar = hideSidebar;
 window.showSidebar = showSidebar;
 window.toggleSidebarVisibility = toggleSidebarVisibility;
+window.playNextVideo = playNextVideo;
+window.updatePlayNextButtonState = updatePlayNextButtonState;
 
 // Debug function to check sidebar state
 window.debugSidebar = function() {
@@ -1954,6 +2019,14 @@ function initializePlayerControls() {
                 }
             } catch (_) {}
         }, { capture: true });
+    }
+
+    // Play Next button
+    const playNextBtn = document.getElementById('play-next-btn');
+    if (playNextBtn) {
+        playNextBtn.addEventListener('click', () => {
+            playNextVideo();
+        });
     }
 
     // Autoplay toggle
