@@ -251,11 +251,16 @@ async function fetchTrendingVideos(region = 'US') {
         console.error('Error fetching trending videos:', error);
         const videoContainer = document.getElementById('video-container');
         if (videoContainer) {
+            // Show error message with debug info
             videoContainer.innerHTML = `
                 <div class="error-message">
                     <p>Failed to load videos. Please try again later.</p>
+                    <p><small>Error: ${error.message}</small></p>
                     <button onclick="fetchTrendingVideos('${region}')" class="retry-button">
                         Retry
+                    </button>
+                    <button onclick="testVideoLoading()" class="retry-button">
+                        Debug
                     </button>
                 </div>
             `;
@@ -1461,9 +1466,12 @@ function displayVideos(videos) {
     console.log('Video container found for display:', videoContainer);
 
     if (!videos || videos.length === 0) {
+        console.log('No videos to display, showing no-results message');
         videoContainer.innerHTML = '<div class="no-results">No videos available</div>';
         return;
     }
+
+    console.log('Starting to create video cards...');
 
     // Clear existing content
     videoContainer.innerHTML = '';
@@ -1538,6 +1546,9 @@ function displayVideos(videos) {
             console.error(`Error creating video card at index ${index}:`, error);
         }
     });
+    
+    console.log(`Finished creating ${videoGrid.children.length} video cards`);
+    console.log('Video container final content:', videoContainer.innerHTML.substring(0, 200) + '...');
 }
  
 
@@ -2187,10 +2198,68 @@ document.addEventListener('DOMContentLoaded', function() {
     // Reset API keys daily
     resetAPIKeysDaily();
     
+    // Debug API key status
+    console.log('API Key Status:', {
+        totalKeys: YOUTUBE_CONFIG.getKeyCount(),
+        availableKeys: YOUTUBE_CONFIG.getAvailableKeysCount(),
+        currentIndex: YOUTUBE_CONFIG.getCurrentKeyIndex()
+    });
+    
     setTimeout(() => {
+        console.log('Starting fetchTrendingVideos...');
         fetchTrendingVideos('US');
     }, 100);
 });
 
 // Also try immediately
+console.log('Trying immediate fetchTrendingVideos...');
 fetchTrendingVideos('US');
+
+// Test function to check if everything is working
+window.testVideoLoading = function() {
+    console.log('=== Testing Video Loading ===');
+    console.log('Video container exists:', !!document.getElementById('video-container'));
+    console.log('YOUTUBE_CONFIG available:', !!YOUTUBE_CONFIG);
+    console.log('API keys count:', YOUTUBE_CONFIG.getKeyCount());
+    console.log('Current app state:', appState);
+    
+    // Test a simple API call
+    YOUTUBE_CONFIG.getAPIKey().then(key => {
+        console.log('API key retrieved:', key ? 'Success' : 'Failed');
+        console.log('Key preview:', key ? key.substring(0, 10) + '...' : 'None');
+    }).catch(err => {
+        console.error('API key error:', err);
+    });
+};
+
+// Test function to show sample videos
+window.testDisplayVideos = function() {
+    console.log('=== Testing Video Display ===');
+    const testVideos = [
+        {
+            id: 'test1',
+            snippet: {
+                title: 'Test Video 1',
+                channelTitle: 'Test Channel',
+                publishedAt: new Date().toISOString(),
+                thumbnails: {
+                    medium: { url: 'images/placeholder.jpg' }
+                }
+            }
+        },
+        {
+            id: 'test2',
+            snippet: {
+                title: 'Test Video 2',
+                channelTitle: 'Test Channel 2',
+                publishedAt: new Date().toISOString(),
+                thumbnails: {
+                    medium: { url: 'images/placeholder.jpg' }
+                }
+            }
+        }
+    ];
+    
+    console.log('Testing displayVideos with test data...');
+    displayVideos(testVideos);
+};
