@@ -20,7 +20,11 @@ const appState = {
     // Current list of video IDs displayed on the page (for next/previous navigation)
     currentList: [],
     // Index of the currently playing video within currentList
-    currentIndex: -1
+    currentIndex: -1,
+    // Video queue for reserved videos (max 3)
+    videoQueue: JSON.parse(localStorage.getItem('videoQueue') || '[]'),
+    // Search results for video reservation
+    searchResults: []
 };
 
 // Load watch history from storage
@@ -36,6 +40,50 @@ function saveWatchHistory() {
 
 function saveAutoplaySetting() {
     localStorage.setItem('autoplayEnabled', JSON.stringify(appState.autoplayEnabled));
+}
+
+// Video Queue Management
+function saveVideoQueue() {
+    localStorage.setItem('videoQueue', JSON.stringify(appState.videoQueue));
+}
+
+function addToVideoQueue(videoData) {
+    if (appState.videoQueue.length >= 3) {
+        showError('Queue is full! Remove a video first to add another.');
+        return false;
+    }
+    
+    // Check if video is already in queue
+    if (appState.videoQueue.some(v => v.videoId === videoData.videoId)) {
+        showError('Video is already in your queue!');
+        return false;
+    }
+    
+    appState.videoQueue.push(videoData);
+    saveVideoQueue();
+    updateQueueDisplay();
+    return true;
+}
+
+function removeFromVideoQueue(videoId) {
+    appState.videoQueue = appState.videoQueue.filter(v => v.videoId !== videoId);
+    saveVideoQueue();
+    updateQueueDisplay();
+}
+
+function clearVideoQueue() {
+    appState.videoQueue = [];
+    saveVideoQueue();
+    updateQueueDisplay();
+}
+
+function getNextQueuedVideo() {
+    if (appState.videoQueue.length > 0) {
+        const nextVideo = appState.videoQueue.shift();
+        saveVideoQueue(); // Save the updated queue to localStorage
+        return nextVideo;
+    }
+    return null;
 }
 
 // Add video to watch history
@@ -234,6 +282,130 @@ function createVideoCard(video) {
     return videoCard;
 }
 
+// Create search result card for queue
+function createSearchResultCard(item) {
+    const card = document.createElement('div');
+    card.className = 'search-result-card';
+    card.dataset.videoId = item.id.videoId;
+    
+    const thumbnailUrl = item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || 'images/placeholder.jpg';
+    const isInQueue = appState.videoQueue.some(v => v.videoId === item.id.videoId);
+    const isQueueFull = appState.videoQueue.length >= 3;
+    
+    card.innerHTML = `
+        <img src="${thumbnailUrl}" 
+             alt="${escapeHtml(item.snippet.title)}"
+             class="search-result-thumbnail"
+             onerror="this.src='images/placeholder.jpg'">
+        <div class="search-result-title">${escapeHtml(item.snippet.title)}</div>
+        <div class="search-result-channel">${escapeHtml(item.snippet.channelTitle)}</div>
+        <div class="search-result-actions">
+            <button class="add-to-queue-btn" 
+                    ${isInQueue || isQueueFull ? 'disabled' : ''}
+                    data-video-id="${item.id.videoId}">
+                <i class="fas fa-plus"></i>
+                ${isInQueue ? 'In Queue' : isQueueFull ? 'Queue Full' : 'Add to Queue'}
+            </button>
+            <button class="play-now-btn" data-video-id="${item.id.videoId}">
+                <i class="fas fa-play"></i>
+                Play Now
+            </button>
+        </div>
+    `;
+    
+    // Add event listeners
+    const addToQueueBtn = card.querySelector('.add-to-queue-btn');
+    const playNowBtn = card.querySelector('.play-now-btn');
+    
+    addToQueueBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!addToQueueBtn.disabled) {
+            const videoData = {
+                videoId: item.id.videoId,
+                title: item.snippet.title,
+                channelTitle: item.snippet.channelTitle,
+                thumbnail: thumbnailUrl,
+                publishedAt: item.snippet.publishedAt
+            };
+            
+            if (addToVideoQueue(videoData)) {
+                addToQueueBtn.innerHTML = '<i class="fas fa-check"></i> Added!';
+                addToQueueBtn.disabled = true;
+                addToQueueBtn.style.background = '#28a745';
+            }
+        }
+    });
+    
+    playNowBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playVideo(item.id.videoId);
+    });
+    
+    return card;
+}
+
+// Update queue display
+function updateQueueDisplay() {
+    const queueContainer = document.getElementById('video-queue');
+    const queueCount = document.getElementById('queue-count');
+    
+    if (!queueContainer || !queueCount) return;
+    
+    queueCount.textContent = `${appState.videoQueue.length}/3`;
+    
+    if (appState.videoQueue.length === 0) {
+        queueContainer.innerHTML = `
+            <div class="queue-empty">
+                <i class="fas fa-list-ul"></i>
+                <p>No videos reserved yet</p>
+                <small>Search and click the + button to reserve videos</small>
+            </div>
+        `;
+    } else {
+        queueContainer.innerHTML = '';
+        appState.videoQueue.forEach((video, index) => {
+            const queueItem = document.createElement('div');
+            queueItem.className = 'queue-item';
+            queueItem.dataset.videoId = video.videoId;
+            
+            queueItem.innerHTML = `
+                <img src="${video.thumbnail}" 
+                     alt="${escapeHtml(video.title)}"
+                     class="queue-item-thumbnail"
+                     onerror="this.src='images/placeholder.jpg'">
+                <div class="queue-item-info">
+                    <div class="queue-item-title">${escapeHtml(video.title)}</div>
+                    <div class="queue-item-channel">${escapeHtml(video.channelTitle)}</div>
+                </div>
+                <div class="queue-item-actions">
+                    <button class="queue-action-btn play" title="Play Now" data-video-id="${video.videoId}">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="queue-action-btn remove" title="Remove from Queue" data-video-id="${video.videoId}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            // Add event listeners
+            const playBtn = queueItem.querySelector('.play');
+            const removeBtn = queueItem.querySelector('.remove');
+            
+            playBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                playVideo(video.videoId);
+            });
+            
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeFromVideoQueue(video.videoId);
+            });
+            
+            queueContainer.appendChild(queueItem);
+        });
+    }
+}
+
 // Add styles for error message and retry button
 const style = document.createElement('style');
 style.textContent = `
@@ -379,11 +551,98 @@ async function searchVideos(query) {
     }
 }
 
+// Video Search for Queue (separate from main search)
+async function searchVideosForQueue(query) {
+    try {
+        const searchResultsContainer = document.getElementById('search-results');
+        if (!searchResultsContainer) return;
+
+        // Show loading in search results
+        searchResultsContainer.innerHTML = `
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        `;
+        searchResultsContainer.classList.remove('hidden');
+
+        let attempts = 0;
+        const maxAttempts = YOUTUBE_CONFIG.getKeyCount();
+        let lastError = null;
+
+        while (attempts < maxAttempts) {
+            try {
+                const apiKey = await YOUTUBE_CONFIG.getAPIKey();
+                console.log(`Queue search attempt ${attempts + 1}/${maxAttempts} with API key index: ${YOUTUBE_CONFIG.getCurrentKeyIndex()}`);
+
+                const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`);
+                
+                if (response.status === 403) {
+                    console.log('API key quota exceeded, trying next key...');
+                    lastError = 'API key quota exceeded';
+                    attempts++;
+                    continue;
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Clear loading state
+                searchResultsContainer.innerHTML = '';
+                
+                // Process and display search results for queue
+                if (data.items && data.items.length > 0) {
+                    appState.searchResults = data.items;
+                    data.items.forEach(item => {
+                        const searchResultCard = createSearchResultCard(item);
+                        searchResultsContainer.appendChild(searchResultCard);
+                    });
+                } else {
+                    searchResultsContainer.innerHTML = '<div class="no-results">No videos found</div>';
+                }
+                
+                return; // Success, exit the function
+            } catch (error) {
+                console.error('Error with current API key:', error);
+                lastError = error.message;
+                attempts++;
+            }
+        }
+
+        // If we get here, all attempts failed
+        throw new Error(`Failed to search videos after ${maxAttempts} attempts. Last error: ${lastError}`);
+
+    } catch (error) {
+        console.error('Queue search error:', error);
+        const errorMessage = error.message === 'All API keys exhausted'
+            ? 'Unable to perform search. Please try again later.'
+            : 'Failed to search videos. Please try again.';
+        
+        const searchResultsContainer = document.getElementById('search-results');
+        if (searchResultsContainer) {
+            searchResultsContainer.innerHTML = `
+                <div class="error-message">
+                    <p>${errorMessage}</p>
+                    <button onclick="searchVideosForQueue('${encodeURIComponent(query)}')" class="retry-button">
+                        Retry Search
+                    </button>
+                </div>
+            `;
+        }
+    }
+}
+
 // Add event listeners for search
 document.addEventListener('DOMContentLoaded', function() {
     // Existing search listeners
     const searchInput = document.querySelector('.search-box input');
     const searchButton = document.querySelector('.search-box button');
+
+    // Video search for queue listeners
+    const videoSearchInput = document.getElementById('video-search-input');
+    const videoSearchButton = document.getElementById('video-search-btn');
 
     // Add region selector listener
     const regionSelect = document.getElementById('region-select');
@@ -446,10 +705,33 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Video search for queue listeners
+    if (videoSearchButton && videoSearchInput) {
+        videoSearchButton.addEventListener('click', () => {
+            const query = videoSearchInput.value.trim();
+            if (query) {
+                searchVideosForQueue(query);
+            }
+        });
+
+        videoSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const query = videoSearchInput.value.trim();
+                if (query) {
+                    searchVideosForQueue(query);
+                }
+            }
+        });
+    }
+
+    // Initialize queue display
+    updateQueueDisplay();
 });
 
 // Make functions globally available
 window.searchVideos = searchVideos;
+window.searchVideosForQueue = searchVideosForQueue;
 window.fetchTrendingVideos = fetchTrendingVideos;
 window.playVideo = playVideo;
 window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
@@ -971,8 +1253,18 @@ function onPlayerStateChange(event) {
         } catch (_) {}
     }
     if (event.data === YT.PlayerState.ENDED) {
-        // When video ends, if autoplay is enabled, try related videos first
+        // When video ends, if autoplay is enabled, check queue first
         if (appState.autoplayEnabled) {
+            // First priority: Check if there are videos in the queue
+            const nextQueuedVideo = getNextQueuedVideo();
+            if (nextQueuedVideo) {
+                console.log('Autoplaying queued video:', nextQueuedVideo.title);
+                playVideo(nextQueuedVideo.videoId);
+                updateQueueDisplay(); // Update display after removing from queue
+                return;
+            }
+            
+            // Second priority: Try related videos
             const currentId = appState.currentVideo;
             if (currentId) {
                 fetchRelatedVideoIds(currentId, 10).then((relatedIds) => {
