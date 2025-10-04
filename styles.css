@@ -271,6 +271,31 @@ body {
     transform: none;
 }
 
+.hide-sidebar-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 28px;
+}
+
+.hide-sidebar-btn:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+}
+
+.hide-sidebar-btn:active {
+    transform: translateY(0);
+}
+
 /* Queue Search Section */
 .queue-search-section {
     margin-bottom: 20px;
@@ -583,6 +608,60 @@ body {
     min-height: calc(100vh - 60px);
     background-color: var(--background-color);
     width: calc(100% - 570px);
+}
+
+/* Hidden sidebar state */
+.video-queue-sidebar.hidden {
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.content.sidebar-hidden {
+    margin-right: 0;
+    width: calc(100% - 250px);
+}
+
+/* Show sidebar button */
+.show-sidebar-btn {
+    position: fixed;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    background: #3ea6ff;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(62, 166, 255, 0.3);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.9;
+}
+
+.show-sidebar-btn:hover {
+    background: #2d8ce6;
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 6px 16px rgba(62, 166, 255, 0.4);
+    opacity: 1;
+}
+
+.show-sidebar-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.show-sidebar-btn i {
+    font-size: 16px;
+}
+
+.show-sidebar-btn.hidden {
+    display: none;
 }
 
 .shortcut-links {
@@ -2290,6 +2369,18 @@ body {
     .video-queue-sidebar.active::before {
         opacity: 1;
         pointer-events: auto;
+    }
+    
+    /* Mobile hidden sidebar state */
+    .video-queue-sidebar.hidden {
+        transform: translateX(100%);
+        opacity: 0;
+        pointer-events: none;
+    }
+    
+    /* Hide show sidebar button on mobile when sidebar is hidden */
+    .show-sidebar-btn {
+        display: none !important;
     }
     
     /* Mobile queue sidebar close button */

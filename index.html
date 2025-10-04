@@ -110,6 +110,9 @@
                 <h3>Next Videos</h3>
                 <div class="queue-header-actions">
                     <span id="sidebar-queue-count" class="sidebar-queue-count">0/7</span>
+                    <button id="hide-sidebar-btn" class="hide-sidebar-btn" title="Hide Sidebar">
+                        <i class="fas fa-eye-slash"></i>
+                    </button>
                     <button id="clear-all-queue-btn" class="clear-all-btn" title="Clear All Videos">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -141,6 +144,12 @@
 
         <!-- Content Area -->
         <div class="content">
+            <!-- Show Sidebar Toggle (only visible when sidebar is hidden) -->
+            <button id="show-sidebar-btn" class="show-sidebar-btn hidden" title="Show Next Videos Sidebar">
+                <i class="fas fa-list"></i>
+                <span>Next Videos</span>
+            </button>
+            
             <!-- Main Video Grid -->
             <div id="video-container" class="video-grid"></div>
             <div id="loading" class="loading hidden">

@@ -24,7 +24,9 @@ const appState = {
     // Video queue for reserved videos (max 7)
     videoQueue: JSON.parse(localStorage.getItem('videoQueue') || '[]'),
     // Search results for video reservation
-    searchResults: []
+    searchResults: [],
+    // Sidebar visibility state
+    sidebarHidden: JSON.parse(localStorage.getItem('sidebarHidden') || 'false')
 };
 
 // Load watch history from storage
@@ -40,6 +42,73 @@ function saveWatchHistory() {
 
 function saveAutoplaySetting() {
     localStorage.setItem('autoplayEnabled', JSON.stringify(appState.autoplayEnabled));
+}
+
+function saveSidebarVisibility() {
+    localStorage.setItem('sidebarHidden', JSON.stringify(appState.sidebarHidden));
+}
+
+// Sidebar visibility management
+function hideSidebar() {
+    const videoQueueSidebar = document.querySelector('.video-queue-sidebar');
+    const content = document.querySelector('.content');
+    const showSidebarBtn = document.getElementById('show-sidebar-btn');
+    const hideSidebarBtn = document.getElementById('hide-sidebar-btn');
+    
+    if (videoQueueSidebar && content) {
+        videoQueueSidebar.classList.add('hidden');
+        content.classList.add('sidebar-hidden');
+        appState.sidebarHidden = true;
+        saveSidebarVisibility();
+        
+        // Show the show sidebar button
+        if (showSidebarBtn) {
+            showSidebarBtn.classList.remove('hidden');
+        }
+        
+        // Update hide button icon
+        if (hideSidebarBtn) {
+            hideSidebarBtn.innerHTML = '<i class="fas fa-eye"></i>';
+            hideSidebarBtn.title = 'Show Sidebar';
+        }
+        
+        console.log('Sidebar hidden');
+    }
+}
+
+function showSidebar() {
+    const videoQueueSidebar = document.querySelector('.video-queue-sidebar');
+    const content = document.querySelector('.content');
+    const showSidebarBtn = document.getElementById('show-sidebar-btn');
+    const hideSidebarBtn = document.getElementById('hide-sidebar-btn');
+    
+    if (videoQueueSidebar && content) {
+        videoQueueSidebar.classList.remove('hidden');
+        content.classList.remove('sidebar-hidden');
+        appState.sidebarHidden = false;
+        saveSidebarVisibility();
+        
+        // Hide the show sidebar button
+        if (showSidebarBtn) {
+            showSidebarBtn.classList.add('hidden');
+        }
+        
+        // Update hide button icon
+        if (hideSidebarBtn) {
+            hideSidebarBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+            hideSidebarBtn.title = 'Hide Sidebar';
+        }
+        
+        console.log('Sidebar shown');
+    }
+}
+
+function toggleSidebarVisibility() {
+    if (appState.sidebarHidden) {
+        showSidebar();
+    } else {
+        hideSidebar();
+    }
 }
 
 // Video Queue Management
@@ -1411,6 +1480,38 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('Clear all queue button not found');
     }
 
+    // Hide sidebar button
+    const hideSidebarBtn = document.getElementById('hide-sidebar-btn');
+    if (hideSidebarBtn) {
+        hideSidebarBtn.addEventListener('click', (e) => {
+            try {
+                e.preventDefault();
+                e.stopPropagation();
+                hideSidebar();
+            } catch (error) {
+                console.error('Error hiding sidebar:', error);
+            }
+        });
+    } else {
+        console.warn('Hide sidebar button not found');
+    }
+
+    // Show sidebar button
+    const showSidebarBtn = document.getElementById('show-sidebar-btn');
+    if (showSidebarBtn) {
+        showSidebarBtn.addEventListener('click', (e) => {
+            try {
+                e.preventDefault();
+                e.stopPropagation();
+                showSidebar();
+            } catch (error) {
+                console.error('Error showing sidebar:', error);
+            }
+        });
+    } else {
+        console.warn('Show sidebar button not found');
+    }
+
     // Close sidebars when clicking outside
     document.addEventListener('click', (e) => {
         try {
@@ -1481,6 +1582,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update clear all button state
     updateClearAllButtonState();
+    
+    // Initialize sidebar visibility state
+    if (appState.sidebarHidden) {
+        hideSidebar();
+    } else {
+        showSidebar();
+    }
 });
 
 // Make functions globally available
@@ -1498,6 +1606,9 @@ window.clearVideoQueue = clearVideoQueue;
 window.fetchTrendingVideos = fetchTrendingVideos;
 window.playVideo = playVideo;
 window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+window.hideSidebar = hideSidebar;
+window.showSidebar = showSidebar;
+window.toggleSidebarVisibility = toggleSidebarVisibility;
 
 async function fetchVideoStatistics(videoId, videoCard) {
     try {
