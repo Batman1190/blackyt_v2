@@ -47,6 +47,32 @@ function saveVideoQueue() {
     localStorage.setItem('videoQueue', JSON.stringify(appState.videoQueue));
 }
 
+// Update mobile queue badge
+function updateMobileQueueBadge() {
+    try {
+        const mobileQueueBadge = document.getElementById('mobile-queue-badge');
+        console.log('updateMobileQueueBadge called, queue length:', appState.videoQueue.length);
+        if (mobileQueueBadge) {
+            mobileQueueBadge.textContent = appState.videoQueue.length;
+            console.log('Mobile badge updated to:', mobileQueueBadge.textContent);
+        } else {
+            console.log('Mobile queue badge element not found');
+        }
+    } catch (error) {
+        console.error('Error updating mobile queue badge:', error);
+    }
+}
+
+// Update mini queue display (placeholder function)
+function updateMiniQueueDisplay() {
+    try {
+        console.log('updateMiniQueueDisplay called, queue length:', appState.videoQueue.length);
+        // This function can be implemented later if needed
+    } catch (error) {
+        console.error('Error updating mini queue display:', error);
+    }
+}
+
 function addToVideoQueue(videoData) {
     console.log('addToVideoQueue called with:', videoData);
     console.log('Current queue length:', appState.videoQueue.length);
@@ -1324,20 +1350,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Update mobile queue badge
-    window.updateMobileQueueBadge = function() {
-        try {
-            console.log('updateMobileQueueBadge called, queue length:', appState.videoQueue.length);
-            if (mobileQueueBadge) {
-                mobileQueueBadge.textContent = appState.videoQueue.length;
-                console.log('Mobile badge updated to:', mobileQueueBadge.textContent);
-            } else {
-                console.log('Mobile queue badge element not found');
-            }
-        } catch (error) {
-            console.error('Error updating mobile queue badge:', error);
-        }
-    };
+    // Functions are now defined at the top of the file
 
     // Debug queue initialization
     console.log('Initial queue from localStorage:', localStorage.getItem('videoQueue'));
@@ -1374,6 +1387,7 @@ window.closeSearchOverlay = closeSearchOverlay;
 window.searchVideosForSidebar = searchVideosForSidebar;
 window.updateSidebarQueueDisplay = updateSidebarQueueDisplay;
 window.updateMobileQueueBadge = updateMobileQueueBadge;
+window.updateMiniQueueDisplay = updateMiniQueueDisplay;
 window.clearVideoQueue = clearVideoQueue;
 window.fetchTrendingVideos = fetchTrendingVideos;
 window.playVideo = playVideo;
