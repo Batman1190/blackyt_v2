@@ -8,6 +8,63 @@
     --card-bg: rgba(255, 255, 255, 0.05);
 }
 
+/* Force Desktop View - Override mobile styles */
+/* This forces desktop layout on all screen sizes */
+.navbar {
+    padding: 10px 2% !important;
+    height: 60px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+}
+
+.nav-left {
+    margin-bottom: 0 !important;
+}
+
+.nav-middle {
+    margin: 0 !important;
+}
+
+.nav-right {
+    margin: 0 !important;
+}
+
+.container {
+    margin-top: 60px !important;
+}
+
+.search-box {
+    padding: 8px 12px !important;
+}
+
+.search-box input {
+    font-size: 16px !important;
+    padding: 8px !important;
+}
+
+.video-grid {
+    gap: 20px !important;
+    padding: 20px !important;
+}
+
+.video-card {
+    margin-bottom: 20px !important;
+}
+
+.video-info {
+    padding: 12px !important;
+}
+
+.video-info h3 {
+    font-size: 16px !important;
+    margin-bottom: 8px !important;
+}
+
+.video-info p {
+    font-size: 14px !important;
+    margin-bottom: 4px !important;
+}
+
 /* Support Tagline */
 .support-tagline {
     position: fixed;
