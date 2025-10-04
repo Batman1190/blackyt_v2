@@ -1209,50 +1209,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Video search for queue listeners (removed - now using sidebar search)
 
-    // Player search listeners
-    if (playerSearchButton && playerSearchInput) {
-        playerSearchButton.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent event from reaching video player
-            const query = playerSearchInput.value.trim();
-            if (query) {
-                showSearchOverlay(query);
-                // Auto-search when opening overlay
-                setTimeout(() => {
-                    searchVideosForOverlay(query);
-                }, 200);
-            } else {
-                showSearchOverlay();
-            }
-        });
-
-        playerSearchInput.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent event from reaching video player
-        });
-
-        playerSearchInput.addEventListener('keypress', (e) => {
-            e.stopPropagation(); // Prevent event from reaching video player
-            if (e.key === 'Enter') {
-                const query = playerSearchInput.value.trim();
-                if (query) {
-                    showSearchOverlay(query);
-                    // Auto-search when opening overlay
-                    setTimeout(() => {
-                        searchVideosForOverlay(query);
-                    }, 200);
-                } else {
-                    showSearchOverlay();
-                }
-            }
-        });
-
-        playerSearchInput.addEventListener('focus', (e) => {
-            e.stopPropagation(); // Prevent event from reaching video player
-        });
-
-        playerSearchInput.addEventListener('input', (e) => {
-            e.stopPropagation(); // Prevent event from reaching video player
-        });
-    }
+    // Player search listeners (removed - no longer needed)
 
     // Overlay search listeners
     if (closeSearchOverlayBtn) {
@@ -1358,7 +1315,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Update mobile queue badge
-    function updateMobileQueueBadge() {
+    window.updateMobileQueueBadge = function() {
         try {
             console.log('updateMobileQueueBadge called, queue length:', appState.videoQueue.length);
             if (mobileQueueBadge) {
@@ -1370,7 +1327,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error updating mobile queue badge:', error);
         }
-    }
+    };
 
     // Debug queue initialization
     console.log('Initial queue from localStorage:', localStorage.getItem('videoQueue'));
