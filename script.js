@@ -329,9 +329,21 @@ function createSearchResultCard(item) {
             };
             
             if (addToVideoQueue(videoData)) {
+                // Update button appearance
                 addToQueueBtn.innerHTML = '<i class="fas fa-check"></i> Added!';
                 addToQueueBtn.disabled = true;
                 addToQueueBtn.style.background = '#28a745';
+                addToQueueBtn.style.color = 'white';
+                addToQueueBtn.style.cursor = 'not-allowed';
+                
+                // Update all queue displays
+                updateQueueDisplay();
+                updateMiniQueueDisplay();
+                updateSidebarQueueDisplay();
+                
+                console.log('Video added to queue:', videoData.title);
+            } else {
+                console.log('Failed to add video to queue');
             }
         }
     });
@@ -413,9 +425,14 @@ function updateQueueDisplay() {
 
 // Sidebar Search Functions
 async function searchVideosForSidebar(query) {
+    console.log('searchVideosForSidebar called with query:', query);
     try {
         const sidebarResultsContainer = document.getElementById('sidebar-search-results');
-        if (!sidebarResultsContainer) return;
+        if (!sidebarResultsContainer) {
+            console.error('Sidebar results container not found');
+            return;
+        }
+        console.log('Sidebar results container found:', sidebarResultsContainer);
 
         // Show loading in sidebar search results
         sidebarResultsContainer.innerHTML = `
@@ -540,10 +557,21 @@ function createSidebarSearchCard(item) {
             };
             
             if (addToVideoQueue(videoData)) {
+                // Update button appearance
                 addToQueueBtn.innerHTML = '<i class="fas fa-check"></i> Added!';
                 addToQueueBtn.disabled = true;
                 addToQueueBtn.style.background = '#28a745';
-                updateSidebarQueueDisplay(); // Update sidebar queue
+                addToQueueBtn.style.color = 'white';
+                addToQueueBtn.style.cursor = 'not-allowed';
+                
+                // Update all queue displays
+                updateQueueDisplay();
+                updateMiniQueueDisplay();
+                updateSidebarQueueDisplay();
+                
+                console.log('Video added to queue:', videoData.title);
+            } else {
+                console.log('Failed to add video to queue');
             }
         }
     });
@@ -975,10 +1003,21 @@ function createOverlaySearchCard(item) {
             };
             
             if (addToVideoQueue(videoData)) {
+                // Update button appearance
                 addToQueueBtn.innerHTML = '<i class="fas fa-check"></i> Added!';
                 addToQueueBtn.disabled = true;
                 addToQueueBtn.style.background = '#28a745';
-                updateMiniQueueDisplay(); // Update mini queue in overlay
+                addToQueueBtn.style.color = 'white';
+                addToQueueBtn.style.cursor = 'not-allowed';
+                
+                // Update all queue displays
+                updateQueueDisplay();
+                updateMiniQueueDisplay();
+                updateSidebarQueueDisplay();
+                
+                console.log('Video added to queue:', videoData.title);
+            } else {
+                console.log('Failed to add video to queue');
             }
         }
     });
@@ -1048,8 +1087,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Sidebar search event listeners
     if (sidebarSearchButton && sidebarSearchInput) {
+        console.log('Setting up sidebar search listeners');
         sidebarSearchButton.addEventListener('click', () => {
             const query = sidebarSearchInput.value.trim();
+            console.log('Sidebar search clicked with query:', query);
             if (query) {
                 searchVideosForSidebar(query);
             }
@@ -1058,10 +1099,16 @@ document.addEventListener('DOMContentLoaded', function() {
         sidebarSearchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 const query = sidebarSearchInput.value.trim();
+                console.log('Sidebar search enter pressed with query:', query);
                 if (query) {
                     searchVideosForSidebar(query);
                 }
             }
+        });
+    } else {
+        console.log('Sidebar search elements not found:', {
+            button: !!sidebarSearchButton,
+            input: !!sidebarSearchInput
         });
     }
 
