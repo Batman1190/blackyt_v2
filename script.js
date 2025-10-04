@@ -1071,9 +1071,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.querySelector('.search-box input');
     const searchButton = document.querySelector('.search-box button');
 
-    // Video search for queue listeners
-    const videoSearchInput = document.getElementById('video-search-input');
-    const videoSearchButton = document.getElementById('video-search-btn');
+    // Video search for queue listeners (removed - now using sidebar search)
 
     // Overlay search listeners
     const overlaySearchInput = document.getElementById('overlay-search-input');
@@ -1174,24 +1172,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Video search for queue listeners
-    if (videoSearchButton && videoSearchInput) {
-        videoSearchButton.addEventListener('click', () => {
-            const query = videoSearchInput.value.trim();
-            if (query) {
-                searchVideosForQueue(query);
-            }
-        });
-
-        videoSearchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const query = videoSearchInput.value.trim();
-                if (query) {
-                    searchVideosForQueue(query);
-                }
-            }
-        });
-    }
+    // Video search for queue listeners (removed - now using sidebar search)
 
     // Player search listeners
     if (playerSearchButton && playerSearchInput) {
