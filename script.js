@@ -846,14 +846,15 @@ function createOverlaySearchCard(item) {
 }
 
 // Search Overlay Functions
-function showSearchOverlay() {
+function showSearchOverlay(query = '') {
     const searchOverlay = document.getElementById('search-overlay');
     if (searchOverlay) {
         searchOverlay.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
-        // Focus on search input
+        // Pre-populate and focus on search input
         const searchInput = document.getElementById('overlay-search-input');
         if (searchInput) {
+            searchInput.value = query;
             setTimeout(() => searchInput.focus(), 100);
         }
     }
@@ -893,6 +894,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const overlaySearchButton = document.getElementById('overlay-search-btn');
     const searchQueueBtn = document.querySelector('.search-queue-btn');
     const closeSearchOverlayBtn = document.getElementById('close-search-overlay');
+
+    // Player search listeners
+    const playerSearchInput = document.getElementById('player-search-input');
+    const playerSearchButton = document.querySelector('.player-search-btn');
 
     // Add region selector listener
     const regionSelect = document.getElementById('region-select');
@@ -975,13 +980,38 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Overlay search listeners
-    if (searchQueueBtn) {
-        searchQueueBtn.addEventListener('click', () => {
-            showSearchOverlay();
+    // Player search listeners
+    if (playerSearchButton && playerSearchInput) {
+        playerSearchButton.addEventListener('click', () => {
+            const query = playerSearchInput.value.trim();
+            if (query) {
+                showSearchOverlay(query);
+                // Auto-search when opening overlay
+                setTimeout(() => {
+                    searchVideosForOverlay(query);
+                }, 200);
+            } else {
+                showSearchOverlay();
+            }
+        });
+
+        playerSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const query = playerSearchInput.value.trim();
+                if (query) {
+                    showSearchOverlay(query);
+                    // Auto-search when opening overlay
+                    setTimeout(() => {
+                        searchVideosForOverlay(query);
+                    }, 200);
+                } else {
+                    showSearchOverlay();
+                }
+            }
         });
     }
 
+    // Overlay search listeners
     if (closeSearchOverlayBtn) {
         closeSearchOverlayBtn.addEventListener('click', () => {
             closeSearchOverlay();
