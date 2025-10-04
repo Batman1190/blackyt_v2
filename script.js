@@ -1302,6 +1302,106 @@ function closeSearchOverlay() {
     }
 }
 
+// Voice Search Functionality
+class VoiceSearch {
+    constructor() {
+        this.recognition = null;
+        this.isListening = false;
+        this.currentInput = null;
+        this.initSpeechRecognition();
+    }
+
+    initSpeechRecognition() {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            this.recognition = new SpeechRecognition();
+            
+            this.recognition.continuous = false;
+            this.recognition.interimResults = false;
+            this.recognition.lang = 'en-US';
+
+            this.recognition.onstart = () => {
+                this.isListening = true;
+                this.updateButtonStates();
+            };
+
+            this.recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                if (this.currentInput) {
+                    this.currentInput.value = transcript;
+                    // Trigger search if it's a search input
+                    if (this.currentInput.id === 'sidebar-search-input') {
+                        searchVideosForSidebar(transcript);
+                    } else if (this.currentInput.id === 'overlay-search-input') {
+                        // Trigger overlay search
+                        const searchBtn = document.getElementById('overlay-search-btn');
+                        if (searchBtn) searchBtn.click();
+                    } else {
+                        // Main search
+                        const searchBtn = document.querySelector('.search-box button:last-child');
+                        if (searchBtn) searchBtn.click();
+                    }
+                }
+            };
+
+            this.recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                this.stopListening();
+            };
+
+            this.recognition.onend = () => {
+                this.stopListening();
+            };
+        } else {
+            console.warn('Speech recognition not supported in this browser');
+        }
+    }
+
+    startListening(inputElement) {
+        if (!this.recognition) {
+            alert('Voice search is not supported in your browser. Please use Chrome or Edge.');
+            return;
+        }
+
+        if (this.isListening) {
+            this.stopListening();
+            return;
+        }
+
+        this.currentInput = inputElement;
+        try {
+            this.recognition.start();
+        } catch (error) {
+            console.error('Error starting speech recognition:', error);
+        }
+    }
+
+    stopListening() {
+        this.isListening = false;
+        this.currentInput = null;
+        this.updateButtonStates();
+        if (this.recognition) {
+            this.recognition.stop();
+        }
+    }
+
+    updateButtonStates() {
+        const buttons = document.querySelectorAll('.voice-search-btn');
+        buttons.forEach(button => {
+            if (this.isListening) {
+                button.classList.add('recording');
+                button.title = 'Stop Recording';
+            } else {
+                button.classList.remove('recording');
+                button.title = 'Voice Search';
+            }
+        });
+    }
+}
+
+// Initialize voice search
+const voiceSearch = new VoiceSearch();
+
 // Add event listeners for search
 document.addEventListener('DOMContentLoaded', function() {
     // Existing search listeners
@@ -1309,6 +1409,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchButton = document.querySelector('.search-box button');
 
     // Video search for queue listeners (removed - now using sidebar search)
+
+    // Voice search listeners
+    const voiceSearchButtons = document.querySelectorAll('.voice-search-btn');
+    voiceSearchButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Find the associated input field
+            let inputElement = null;
+            if (button.classList.contains('sidebar-voice-btn')) {
+                inputElement = document.getElementById('sidebar-search-input');
+            } else if (button.classList.contains('overlay-voice-btn')) {
+                inputElement = document.getElementById('overlay-search-input');
+            } else {
+                // Main search box
+                inputElement = document.querySelector('.search-box input');
+            }
+            
+            if (inputElement) {
+                voiceSearch.startListening(inputElement);
+            }
+        });
+    });
 
     // Overlay search listeners
     const overlaySearchInput = document.getElementById('overlay-search-input');
