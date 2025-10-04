@@ -48,18 +48,24 @@ function saveVideoQueue() {
 }
 
 function addToVideoQueue(videoData) {
+    console.log('addToVideoQueue called with:', videoData);
+    console.log('Current queue length:', appState.videoQueue.length);
+    
     if (appState.videoQueue.length >= 3) {
+        console.log('Queue is full, cannot add video');
         showError('Queue is full! Remove a video first to add another.');
         return false;
     }
     
     // Check if video is already in queue
     if (appState.videoQueue.some(v => v.videoId === videoData.videoId)) {
+        console.log('Video already in queue');
         showError('Video is already in your queue!');
         return false;
     }
     
     appState.videoQueue.push(videoData);
+    console.log('Video added to queue, new length:', appState.videoQueue.length);
     saveVideoQueue();
     updateQueueDisplay();
     return true;
@@ -69,12 +75,14 @@ function removeFromVideoQueue(videoId) {
     appState.videoQueue = appState.videoQueue.filter(v => v.videoId !== videoId);
     saveVideoQueue();
     updateQueueDisplay();
+    updateMobileQueueBadge();
 }
 
 function clearVideoQueue() {
     appState.videoQueue = [];
     saveVideoQueue();
     updateQueueDisplay();
+    updateMobileQueueBadge();
 }
 
 function getNextQueuedVideo() {
@@ -421,6 +429,8 @@ function updateQueueDisplay() {
     updateMiniQueueDisplay();
     // Also update sidebar queue display
     updateSidebarQueueDisplay();
+    // Update mobile queue badge
+    updateMobileQueueBadge();
 }
 
 // Sidebar Search Functions
@@ -586,14 +596,25 @@ function createSidebarSearchCard(item) {
 
 // Update sidebar queue display
 function updateSidebarQueueDisplay() {
+    console.log('updateSidebarQueueDisplay called, queue length:', appState.videoQueue.length);
     const sidebarQueueContainer = document.getElementById('sidebar-video-queue');
     const sidebarQueueCount = document.getElementById('sidebar-queue-count');
     
-    if (!sidebarQueueContainer || !sidebarQueueCount) return;
+    console.log('Sidebar elements found:', {
+        container: !!sidebarQueueContainer,
+        count: !!sidebarQueueCount
+    });
+    
+    if (!sidebarQueueContainer || !sidebarQueueCount) {
+        console.error('Sidebar queue elements not found!');
+        return;
+    }
     
     sidebarQueueCount.textContent = `${appState.videoQueue.length}/3`;
+    console.log('Updated queue count to:', sidebarQueueCount.textContent);
     
     if (appState.videoQueue.length === 0) {
+        console.log('Showing empty queue message');
         sidebarQueueContainer.innerHTML = `
             <div class="sidebar-queue-empty">
                 <i class="fas fa-list-ul"></i>
@@ -602,8 +623,10 @@ function updateSidebarQueueDisplay() {
             </div>
         `;
     } else {
+        console.log('Showing queue items:', appState.videoQueue);
         sidebarQueueContainer.innerHTML = '';
         appState.videoQueue.forEach((video, index) => {
+            console.log('Creating queue item for:', video.title);
             const sidebarQueueItem = document.createElement('div');
             sidebarQueueItem.className = 'sidebar-queue-item';
             sidebarQueueItem.dataset.videoId = video.videoId;
@@ -1254,10 +1277,57 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Mobile menu functionality
+    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+    const mobileQueueToggle = document.getElementById('mobile-queue-toggle');
+    const mobileQueueBadge = document.getElementById('mobile-queue-badge');
+    const sidebar = document.querySelector('.sidebar');
+    const videoQueueSidebar = document.querySelector('.video-queue-sidebar');
+
+    // Mobile menu toggle
+    if (mobileMenuToggle && sidebar) {
+        mobileMenuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+            // Close queue sidebar if open
+            if (videoQueueSidebar) {
+                videoQueueSidebar.classList.remove('active');
+            }
+        });
+    }
+
+    // Mobile queue toggle
+    if (mobileQueueToggle && videoQueueSidebar) {
+        mobileQueueToggle.addEventListener('click', () => {
+            videoQueueSidebar.classList.toggle('active');
+            // Close main sidebar if open
+            if (sidebar) {
+                sidebar.classList.remove('active');
+            }
+        });
+    }
+
+    // Close sidebars when clicking outside
+    document.addEventListener('click', (e) => {
+        if (sidebar && !sidebar.contains(e.target) && !mobileMenuToggle.contains(e.target)) {
+            sidebar.classList.remove('active');
+        }
+        if (videoQueueSidebar && !videoQueueSidebar.contains(e.target) && !mobileQueueToggle.contains(e.target)) {
+            videoQueueSidebar.classList.remove('active');
+        }
+    });
+
+    // Update mobile queue badge
+    function updateMobileQueueBadge() {
+        if (mobileQueueBadge) {
+            mobileQueueBadge.textContent = appState.videoQueue.length;
+        }
+    }
+
     // Initialize queue display
     updateQueueDisplay();
     updateMiniQueueDisplay();
     updateSidebarQueueDisplay();
+    updateMobileQueueBadge();
 });
 
 // Make functions globally available
