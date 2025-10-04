@@ -407,58 +407,205 @@ function updateQueueDisplay() {
     
     // Also update mini queue display
     updateMiniQueueDisplay();
+    // Also update sidebar queue display
+    updateSidebarQueueDisplay();
 }
 
-// Update mini queue display in overlay
-function updateMiniQueueDisplay() {
-    const miniQueueContainer = document.getElementById('mini-video-queue');
-    const miniQueueCount = document.getElementById('mini-queue-count');
+// Sidebar Search Functions
+async function searchVideosForSidebar(query) {
+    try {
+        const sidebarResultsContainer = document.getElementById('sidebar-search-results');
+        if (!sidebarResultsContainer) return;
+
+        // Show loading in sidebar search results
+        sidebarResultsContainer.innerHTML = `
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        `;
+        sidebarResultsContainer.classList.remove('hidden');
+
+        let attempts = 0;
+        const maxAttempts = YOUTUBE_CONFIG.getKeyCount();
+        let lastError = null;
+
+        while (attempts < maxAttempts) {
+            try {
+                const apiKey = await YOUTUBE_CONFIG.getAPIKey();
+                console.log(`Sidebar search attempt ${attempts + 1}/${maxAttempts} with API key index: ${YOUTUBE_CONFIG.getCurrentKeyIndex()}`);
+
+                const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=6&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`);
+                
+                if (response.status === 403) {
+                    console.log('API key quota exceeded, trying next key...');
+                    lastError = 'API key quota exceeded';
+                    attempts++;
+                    continue;
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Clear loading state
+                sidebarResultsContainer.innerHTML = '';
+                
+                // Process and display search results for sidebar
+                if (data.items && data.items.length > 0) {
+                    data.items.forEach(item => {
+                        const sidebarSearchCard = createSidebarSearchCard(item);
+                        sidebarResultsContainer.appendChild(sidebarSearchCard);
+                    });
+                } else {
+                    sidebarResultsContainer.innerHTML = '<div class="no-results">No videos found</div>';
+                }
+                
+                return; // Success, exit the function
+            } catch (error) {
+                console.error('Error with current API key:', error);
+                lastError = error.message;
+                attempts++;
+            }
+        }
+
+        // If we get here, all attempts failed
+        throw new Error(`Failed to search videos after ${maxAttempts} attempts. Last error: ${lastError}`);
+
+    } catch (error) {
+        console.error('Sidebar search error:', error);
+        const errorMessage = error.message === 'All API keys exhausted'
+            ? 'Unable to perform search. Please try again later.'
+            : 'Failed to search videos. Please try again.';
+        
+        const sidebarResultsContainer = document.getElementById('sidebar-search-results');
+        if (sidebarResultsContainer) {
+            sidebarResultsContainer.innerHTML = `
+                <div class="error-message">
+                    <p>${errorMessage}</p>
+                    <button onclick="searchVideosForSidebar('${encodeURIComponent(query)}')" class="retry-button">
+                        Retry Search
+                    </button>
+                </div>
+            `;
+        }
+    }
+}
+
+// Create sidebar search result card
+function createSidebarSearchCard(item) {
+    const card = document.createElement('div');
+    card.className = 'sidebar-search-result-card';
+    card.dataset.videoId = item.id.videoId;
     
-    if (!miniQueueContainer || !miniQueueCount) return;
+    const thumbnailUrl = item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || 'images/placeholder.jpg';
+    const isInQueue = appState.videoQueue.some(v => v.videoId === item.id.videoId);
+    const isQueueFull = appState.videoQueue.length >= 3;
     
-    miniQueueCount.textContent = `${appState.videoQueue.length}/3`;
+    card.innerHTML = `
+        <img src="${thumbnailUrl}" 
+             alt="${escapeHtml(item.snippet.title)}"
+             class="sidebar-search-result-thumbnail"
+             onerror="this.src='images/placeholder.jpg'">
+        <div class="sidebar-search-result-title">${escapeHtml(item.snippet.title)}</div>
+        <div class="sidebar-search-result-channel">${escapeHtml(item.snippet.channelTitle)}</div>
+        <div class="sidebar-search-result-actions">
+            <button class="sidebar-add-to-queue-btn" 
+                    ${isInQueue || isQueueFull ? 'disabled' : ''}
+                    data-video-id="${item.id.videoId}">
+                <i class="fas fa-plus"></i>
+                ${isInQueue ? 'In Queue' : isQueueFull ? 'Queue Full' : 'Add'}
+            </button>
+            <button class="sidebar-play-now-btn" data-video-id="${item.id.videoId}">
+                <i class="fas fa-play"></i>
+                Play
+            </button>
+        </div>
+    `;
+    
+    // Add event listeners
+    const addToQueueBtn = card.querySelector('.sidebar-add-to-queue-btn');
+    const playNowBtn = card.querySelector('.sidebar-play-now-btn');
+    
+    addToQueueBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!addToQueueBtn.disabled) {
+            const videoData = {
+                videoId: item.id.videoId,
+                title: item.snippet.title,
+                channelTitle: item.snippet.channelTitle,
+                thumbnail: thumbnailUrl,
+                publishedAt: item.snippet.publishedAt
+            };
+            
+            if (addToVideoQueue(videoData)) {
+                addToQueueBtn.innerHTML = '<i class="fas fa-check"></i> Added!';
+                addToQueueBtn.disabled = true;
+                addToQueueBtn.style.background = '#28a745';
+                updateSidebarQueueDisplay(); // Update sidebar queue
+            }
+        }
+    });
+    
+    playNowBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playVideo(item.id.videoId);
+    });
+    
+    return card;
+}
+
+// Update sidebar queue display
+function updateSidebarQueueDisplay() {
+    const sidebarQueueContainer = document.getElementById('sidebar-video-queue');
+    const sidebarQueueCount = document.getElementById('sidebar-queue-count');
+    
+    if (!sidebarQueueContainer || !sidebarQueueCount) return;
+    
+    sidebarQueueCount.textContent = `${appState.videoQueue.length}/3`;
     
     if (appState.videoQueue.length === 0) {
-        miniQueueContainer.innerHTML = `
-            <div class="mini-queue-empty">
+        sidebarQueueContainer.innerHTML = `
+            <div class="sidebar-queue-empty">
                 <i class="fas fa-list-ul"></i>
                 <p>No videos reserved</p>
+                <small>Search and add videos to your queue</small>
             </div>
         `;
     } else {
-        miniQueueContainer.innerHTML = '';
+        sidebarQueueContainer.innerHTML = '';
         appState.videoQueue.forEach((video, index) => {
-            const miniQueueItem = document.createElement('div');
-            miniQueueItem.className = 'mini-queue-item';
-            miniQueueItem.dataset.videoId = video.videoId;
+            const sidebarQueueItem = document.createElement('div');
+            sidebarQueueItem.className = 'sidebar-queue-item';
+            sidebarQueueItem.dataset.videoId = video.videoId;
             
-            miniQueueItem.innerHTML = `
+            sidebarQueueItem.innerHTML = `
                 <img src="${video.thumbnail}" 
                      alt="${escapeHtml(video.title)}"
-                     class="mini-queue-item-thumbnail"
+                     class="sidebar-queue-item-thumbnail"
                      onerror="this.src='images/placeholder.jpg'">
-                <div class="mini-queue-item-info">
-                    <div class="mini-queue-item-title">${escapeHtml(video.title)}</div>
-                    <div class="mini-queue-item-channel">${escapeHtml(video.channelTitle)}</div>
+                <div class="sidebar-queue-item-info">
+                    <div class="sidebar-queue-item-title">${escapeHtml(video.title)}</div>
+                    <div class="sidebar-queue-item-channel">${escapeHtml(video.channelTitle)}</div>
                 </div>
-                <div class="mini-queue-item-actions">
-                    <button class="mini-queue-action-btn play" title="Play Now" data-video-id="${video.videoId}">
+                <div class="sidebar-queue-item-actions">
+                    <button class="sidebar-queue-action-btn play" title="Play Now" data-video-id="${video.videoId}">
                         <i class="fas fa-play"></i>
                     </button>
-                    <button class="mini-queue-action-btn remove" title="Remove from Queue" data-video-id="${video.videoId}">
+                    <button class="sidebar-queue-action-btn remove" title="Remove from Queue" data-video-id="${video.videoId}">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
             `;
             
             // Add event listeners
-            const playBtn = miniQueueItem.querySelector('.play');
-            const removeBtn = miniQueueItem.querySelector('.remove');
+            const playBtn = sidebarQueueItem.querySelector('.play');
+            const removeBtn = sidebarQueueItem.querySelector('.remove');
             
             playBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 playVideo(video.videoId);
-                closeSearchOverlay(); // Close overlay when playing video
             });
             
             removeBtn.addEventListener('click', (e) => {
@@ -466,7 +613,7 @@ function updateMiniQueueDisplay() {
                 removeFromVideoQueue(video.videoId);
             });
             
-            miniQueueContainer.appendChild(miniQueueItem);
+            sidebarQueueContainer.appendChild(sidebarQueueItem);
         });
     }
 }
@@ -895,9 +1042,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchQueueBtn = document.querySelector('.search-queue-btn');
     const closeSearchOverlayBtn = document.getElementById('close-search-overlay');
 
-    // Player search listeners
-    const playerSearchInput = document.getElementById('player-search-input');
-    const playerSearchButton = document.querySelector('.player-search-btn');
+    // Sidebar search listeners
+    const sidebarSearchInput = document.getElementById('sidebar-search-input');
+    const sidebarSearchButton = document.getElementById('sidebar-search-btn');
+
+    // Sidebar search event listeners
+    if (sidebarSearchButton && sidebarSearchInput) {
+        sidebarSearchButton.addEventListener('click', () => {
+            const query = sidebarSearchInput.value.trim();
+            if (query) {
+                searchVideosForSidebar(query);
+            }
+        });
+
+        sidebarSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const query = sidebarSearchInput.value.trim();
+                if (query) {
+                    searchVideosForSidebar(query);
+                }
+            }
+        });
+    }
 
     // Add region selector listener
     const regionSelect = document.getElementById('region-select');
@@ -1062,6 +1228,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize queue display
     updateQueueDisplay();
+    updateMiniQueueDisplay();
+    updateSidebarQueueDisplay();
 });
 
 // Make functions globally available
@@ -1070,6 +1238,8 @@ window.searchVideosForQueue = searchVideosForQueue;
 window.searchVideosForOverlay = searchVideosForOverlay;
 window.showSearchOverlay = showSearchOverlay;
 window.closeSearchOverlay = closeSearchOverlay;
+window.searchVideosForSidebar = searchVideosForSidebar;
+window.updateSidebarQueueDisplay = updateSidebarQueueDisplay;
 window.fetchTrendingVideos = fetchTrendingVideos;
 window.playVideo = playVideo;
 window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;

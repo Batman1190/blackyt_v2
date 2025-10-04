@@ -98,6 +98,36 @@
             </div>
         </div>
 
+        <!-- Video Queue Sidebar -->
+        <div class="video-queue-sidebar">
+            <div class="queue-sidebar-header">
+                <h3>Next Videos</h3>
+                <span id="sidebar-queue-count" class="sidebar-queue-count">0/3</span>
+            </div>
+            
+            <!-- Search Section -->
+            <div class="queue-search-section">
+                <div class="queue-search-input-group">
+                    <input type="text" id="sidebar-search-input" placeholder="Search next video..." class="sidebar-search-input">
+                    <button id="sidebar-search-btn" class="sidebar-search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div id="sidebar-search-results" class="sidebar-search-results hidden"></div>
+            </div>
+
+            <!-- Queue Display -->
+            <div class="sidebar-queue-container">
+                <div id="sidebar-video-queue" class="sidebar-video-queue">
+                    <div class="sidebar-queue-empty">
+                        <i class="fas fa-list-ul"></i>
+                        <p>No videos reserved</p>
+                        <small>Search and add videos to your queue</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Content Area -->
         <div class="content">
             <!-- Video Search Section -->
@@ -169,12 +199,6 @@
                         <i class="fas fa-toggle-off"></i>
                         <span class="autoplay-text">Autoplay</span>
                     </button>
-                    <div class="player-search-container">
-                        <input type="text" id="player-search-input" placeholder="Search next video..." class="player-search-input">
-                        <button class="control-button player-search-btn" title="Search & Reserve Videos">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
                     <div class="volume-control">
                         <button class="control-button volume-toggle">
                             <i class="fas fa-volume-up"></i>
