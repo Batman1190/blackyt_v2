@@ -187,9 +187,14 @@ function formatTimeAgo(dateString) {
 
 // YouTube API Functions
 async function fetchTrendingVideos(region = 'US') {
+    console.log('fetchTrendingVideos called with region:', region);
     try {
         const videoContainer = document.getElementById('video-container');
-        if (!videoContainer) return;
+        if (!videoContainer) {
+            console.error('Video container not found!');
+            return;
+        }
+        console.log('Video container found:', videoContainer);
 
         // Show loading state
         videoContainer.innerHTML = `
@@ -221,12 +226,16 @@ async function fetchTrendingVideos(region = 'US') {
                 }
 
                 const data = await response.json();
+                console.log('API response received:', data);
                 if (data.items && data.items.length > 0) {
+                    console.log('Found', data.items.length, 'videos');
                     // Track list with trending results only when we are actually showing trending
                     appState.currentList = data.items.map(v => v.id?.videoId || v.id).filter(Boolean);
                     appState.currentIndex = -1;
                     displayVideos(data.items);
                     return; // Success, exit the function
+                } else {
+                    console.log('No videos found in API response');
                 }
             } catch (error) {
                 console.error('Error with current API key:', error);
@@ -1286,47 +1295,80 @@ document.addEventListener('DOMContentLoaded', function() {
     const mobileQueueBadge = document.getElementById('mobile-queue-badge');
     const sidebar = document.querySelector('.sidebar');
     const videoQueueSidebar = document.querySelector('.video-queue-sidebar');
+    
+    // Debug mobile elements
+    console.log('Mobile elements found:', {
+        menuToggle: !!mobileMenuToggle,
+        queueToggle: !!mobileQueueToggle,
+        queueBadge: !!mobileQueueBadge,
+        sidebar: !!sidebar,
+        videoQueueSidebar: !!videoQueueSidebar
+    });
 
     // Mobile menu toggle
     if (mobileMenuToggle && sidebar) {
-        mobileMenuToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('active');
-            // Close queue sidebar if open
-            if (videoQueueSidebar) {
-                videoQueueSidebar.classList.remove('active');
+        mobileMenuToggle.addEventListener('click', (e) => {
+            try {
+                e.preventDefault();
+                sidebar.classList.toggle('active');
+                // Close queue sidebar if open
+                if (videoQueueSidebar) {
+                    videoQueueSidebar.classList.remove('active');
+                }
+                console.log('Mobile menu toggled');
+            } catch (error) {
+                console.error('Error toggling mobile menu:', error);
             }
         });
+    } else {
+        console.warn('Mobile menu toggle or sidebar not found');
     }
 
     // Mobile queue toggle
     if (mobileQueueToggle && videoQueueSidebar) {
-        mobileQueueToggle.addEventListener('click', () => {
-            videoQueueSidebar.classList.toggle('active');
-            // Close main sidebar if open
-            if (sidebar) {
-                sidebar.classList.remove('active');
+        mobileQueueToggle.addEventListener('click', (e) => {
+            try {
+                e.preventDefault();
+                videoQueueSidebar.classList.toggle('active');
+                // Close main sidebar if open
+                if (sidebar) {
+                    sidebar.classList.remove('active');
+                }
+                console.log('Mobile queue toggled');
+            } catch (error) {
+                console.error('Error toggling mobile queue:', error);
             }
         });
+    } else {
+        console.warn('Mobile queue toggle or video queue sidebar not found');
     }
 
     // Close sidebars when clicking outside
     document.addEventListener('click', (e) => {
-        if (sidebar && !sidebar.contains(e.target) && !mobileMenuToggle.contains(e.target)) {
-            sidebar.classList.remove('active');
-        }
-        if (videoQueueSidebar && !videoQueueSidebar.contains(e.target) && !mobileQueueToggle.contains(e.target)) {
-            videoQueueSidebar.classList.remove('active');
+        try {
+            if (sidebar && mobileMenuToggle && !sidebar.contains(e.target) && !mobileMenuToggle.contains(e.target)) {
+                sidebar.classList.remove('active');
+            }
+            if (videoQueueSidebar && mobileQueueToggle && !videoQueueSidebar.contains(e.target) && !mobileQueueToggle.contains(e.target)) {
+                videoQueueSidebar.classList.remove('active');
+            }
+        } catch (error) {
+            console.error('Error handling click outside:', error);
         }
     });
 
     // Update mobile queue badge
     function updateMobileQueueBadge() {
-        console.log('updateMobileQueueBadge called, queue length:', appState.videoQueue.length);
-        if (mobileQueueBadge) {
-            mobileQueueBadge.textContent = appState.videoQueue.length;
-            console.log('Mobile badge updated to:', mobileQueueBadge.textContent);
-        } else {
-            console.log('Mobile queue badge element not found');
+        try {
+            console.log('updateMobileQueueBadge called, queue length:', appState.videoQueue.length);
+            if (mobileQueueBadge) {
+                mobileQueueBadge.textContent = appState.videoQueue.length;
+                console.log('Mobile badge updated to:', mobileQueueBadge.textContent);
+            } else {
+                console.log('Mobile queue badge element not found');
+            }
+        } catch (error) {
+            console.error('Error updating mobile queue badge:', error);
         }
     }
 
@@ -1445,6 +1487,7 @@ async function fetchChannelIcon(channelId, videoCard) {
 // Display Videos
 function displayVideos(videos) {
     console.log(`Displaying ${videos?.length || 0} videos`);
+    console.log('Videos data:', videos);
 
     // Do not override currentList here; it is set by the caller (search or trending)
 
@@ -1453,6 +1496,7 @@ function displayVideos(videos) {
         console.error('Video container not found');
         return;
     }
+    console.log('Video container found for display:', videoContainer);
 
     if (!videos || videos.length === 0) {
         videoContainer.innerHTML = '<div class="no-results">No videos available</div>';
@@ -2136,4 +2180,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Load trending videos on page load
+console.log('Loading trending videos on page startup...');
+
+// Ensure videos load after DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, fetching trending videos...');
+    setTimeout(() => {
+        fetchTrendingVideos('US');
+    }, 100);
+});
+
+// Also try immediately
 fetchTrendingVideos('US');
