@@ -50,6 +50,7 @@ function saveVideoQueue() {
 function addToVideoQueue(videoData) {
     console.log('addToVideoQueue called with:', videoData);
     console.log('Current queue length:', appState.videoQueue.length);
+    console.log('Current queue contents:', appState.videoQueue);
     
     if (appState.videoQueue.length >= 3) {
         console.log('Queue is full, cannot add video');
@@ -66,8 +67,10 @@ function addToVideoQueue(videoData) {
     
     appState.videoQueue.push(videoData);
     console.log('Video added to queue, new length:', appState.videoQueue.length);
+    console.log('Updated queue contents:', appState.videoQueue);
     saveVideoQueue();
     updateQueueDisplay();
+    updateMobileQueueBadge();
     return true;
 }
 
@@ -1318,9 +1321,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update mobile queue badge
     function updateMobileQueueBadge() {
+        console.log('updateMobileQueueBadge called, queue length:', appState.videoQueue.length);
         if (mobileQueueBadge) {
             mobileQueueBadge.textContent = appState.videoQueue.length;
+            console.log('Mobile badge updated to:', mobileQueueBadge.textContent);
+        } else {
+            console.log('Mobile queue badge element not found');
         }
+    }
+
+    // Debug queue initialization
+    console.log('Initial queue from localStorage:', localStorage.getItem('videoQueue'));
+    console.log('Parsed queue:', appState.videoQueue);
+    console.log('Queue length on init:', appState.videoQueue.length);
+    
+    // Check if queue is corrupted or has invalid data
+    if (!Array.isArray(appState.videoQueue)) {
+        console.log('Queue is not an array, resetting...');
+        appState.videoQueue = [];
+        saveVideoQueue();
+    }
+    
+    // Ensure queue doesn't exceed 3 items
+    if (appState.videoQueue.length > 3) {
+        console.log('Queue has more than 3 items, truncating...');
+        appState.videoQueue = appState.videoQueue.slice(0, 3);
+        saveVideoQueue();
     }
 
     // Initialize queue display
@@ -1338,6 +1364,8 @@ window.showSearchOverlay = showSearchOverlay;
 window.closeSearchOverlay = closeSearchOverlay;
 window.searchVideosForSidebar = searchVideosForSidebar;
 window.updateSidebarQueueDisplay = updateSidebarQueueDisplay;
+window.updateMobileQueueBadge = updateMobileQueueBadge;
+window.clearVideoQueue = clearVideoQueue;
 window.fetchTrendingVideos = fetchTrendingVideos;
 window.playVideo = playVideo;
 window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
