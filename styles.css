@@ -8,61 +8,315 @@
     --card-bg: rgba(255, 255, 255, 0.05);
 }
 
-/* Force Desktop View - Override mobile styles */
-/* This forces desktop layout on all screen sizes */
-.navbar {
-    padding: 10px 2% !important;
-    height: 60px !important;
-    flex-direction: row !important;
-    align-items: center !important;
+/* iPad Mini Optimization */
+/* iPad Mini: 768x1024 viewport, 1536x2048 resolution */
+@media only screen and (min-width: 768px) and (max-width: 1024px) {
+    /* Navigation optimization for iPad Mini */
+    .navbar {
+        padding: 12px 3% !important;
+        height: 70px !important;
+    }
+    
+    .nav-left .logo {
+        height: 30px !important;
+    }
+    
+    .nav-left .site-title {
+        font-size: 20px !important;
+    }
+    
+    /* Search box optimization */
+    .search-box {
+        padding: 10px 15px !important;
+        margin-right: 20px !important;
+    }
+    
+    .search-box input {
+        font-size: 18px !important;
+        padding: 10px 15px !important;
+        width: 280px !important;
+    }
+    
+    .voice-search-btn, .search-box button {
+        padding: 10px 12px !important;
+        font-size: 16px !important;
+    }
+    
+    /* Region selector optimization */
+    #region-select {
+        padding: 10px 15px !important;
+        font-size: 16px !important;
+        min-width: 180px !important;
+    }
+    
+    /* Container and content optimization */
+    .container {
+        margin-top: 70px !important;
+        padding: 0 20px !important;
+    }
+    
+    /* Video grid optimization for iPad Mini */
+    .video-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 25px !important;
+        padding: 25px 0 !important;
+        max-width: 900px !important;
+        margin: 0 auto !important;
+    }
+    
+    .video-card {
+        margin-bottom: 25px !important;
+        border-radius: 12px !important;
+        overflow: hidden !important;
+    }
+    
+    .video-thumbnail {
+        height: 200px !important;
+        object-fit: cover !important;
+    }
+    
+    .video-info {
+        padding: 15px !important;
+    }
+    
+    .video-info h3 {
+        font-size: 18px !important;
+        line-height: 1.4 !important;
+        margin-bottom: 10px !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+    }
+    
+    .video-info p {
+        font-size: 15px !important;
+        margin-bottom: 6px !important;
+    }
+    
+    /* Sidebar optimization for iPad Mini */
+    .video-queue-sidebar {
+        width: 350px !important;
+        padding: 25px !important;
+    }
+    
+    .sidebar-search-input {
+        font-size: 16px !important;
+        padding: 12px 15px !important;
+    }
+    
+    .sidebar-search-btn, .sidebar-voice-btn {
+        padding: 12px 15px !important;
+        font-size: 16px !important;
+    }
+    
+    /* Touch-friendly buttons */
+    .control-button, .sidebar-add-to-queue-btn, .sidebar-play-now-btn {
+        min-height: 44px !important;
+        min-width: 44px !important;
+        padding: 12px 16px !important;
+        font-size: 16px !important;
+    }
+    
+    /* Player optimization */
+    .video-player-container {
+        padding: 20px !important;
+    }
+    
+    .player-controls {
+        padding: 15px !important;
+        gap: 15px !important;
+    }
+    
+    .control-button {
+        width: 50px !important;
+        height: 50px !important;
+        font-size: 18px !important;
+    }
+    
+    /* Queue items optimization */
+    .sidebar-queue-item {
+        padding: 15px !important;
+        margin-bottom: 12px !important;
+    }
+    
+    .sidebar-queue-item h4 {
+        font-size: 16px !important;
+        margin-bottom: 8px !important;
+    }
+    
+    .sidebar-queue-item p {
+        font-size: 14px !important;
+    }
 }
 
-.nav-left {
-    margin-bottom: 0 !important;
+/* iPad Mini Portrait Orientation */
+@media only screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+    .video-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 20px !important;
+        padding: 20px 0 !important;
+    }
+    
+    .video-thumbnail {
+        height: 180px !important;
+    }
+    
+    .video-info h3 {
+        font-size: 16px !important;
+        -webkit-line-clamp: 3 !important;
+    }
+    
+    .search-box input {
+        width: 250px !important;
+    }
 }
 
-.nav-middle {
-    margin: 0 !important;
+/* iPad Mini Landscape Orientation */
+@media only screen and (min-width: 1024px) and (max-width: 1024px) and (orientation: landscape) {
+    .video-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 30px !important;
+        padding: 30px 0 !important;
+    }
+    
+    .video-thumbnail {
+        height: 160px !important;
+    }
+    
+    .video-info h3 {
+        font-size: 17px !important;
+        -webkit-line-clamp: 2 !important;
+    }
+    
+    .search-box input {
+        width: 320px !important;
+    }
+    
+    .container {
+        padding: 0 30px !important;
+    }
 }
 
-.nav-right {
-    margin: 0 !important;
+/* iPad Mini Touch Optimizations */
+@media only screen and (min-width: 768px) and (max-width: 1024px) {
+    /* Enhanced touch targets for iPad Mini */
+    .video-card {
+        cursor: pointer !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    }
+    
+    .video-card:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    .video-card:active {
+        transform: translateY(0) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    /* Improved button interactions */
+    .control-button:hover {
+        transform: scale(1.05) !important;
+        background: rgba(255, 255, 255, 0.2) !important;
+    }
+    
+    .control-button:active {
+        transform: scale(0.95) !important;
+    }
+    
+    /* Better scroll behavior */
+    .video-queue-sidebar {
+        -webkit-overflow-scrolling: touch !important;
+        scroll-behavior: smooth !important;
+    }
+    
+    /* Optimized text selection */
+    .video-info h3, .video-info p {
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        user-select: none !important;
+    }
+    
+    /* Improved focus states for accessibility */
+    .search-box input:focus,
+    .sidebar-search-input:focus,
+    .overlay-search-input:focus {
+        outline: 3px solid #3ea6ff !important;
+        outline-offset: 2px !important;
+        border-color: #3ea6ff !important;
+    }
+    
+    /* Better spacing for touch interactions */
+    .queue-header-actions {
+        gap: 15px !important;
+    }
+    
+    .clear-all-btn, .hide-sidebar-btn {
+        min-width: 50px !important;
+        min-height: 50px !important;
+        padding: 12px !important;
+    }
 }
 
-.container {
-    margin-top: 60px !important;
-}
+/* Desktop View Override - Applied to screens larger than iPad Mini */
+@media only screen and (min-width: 1025px) {
+    .navbar {
+        padding: 10px 2% !important;
+        height: 60px !important;
+        flex-direction: row !important;
+        align-items: center !important;
+    }
 
-.search-box {
-    padding: 8px 12px !important;
-}
+    .nav-left {
+        margin-bottom: 0 !important;
+    }
 
-.search-box input {
-    font-size: 16px !important;
-    padding: 8px !important;
-}
+    .nav-middle {
+        margin: 0 !important;
+    }
 
-.video-grid {
-    gap: 20px !important;
-    padding: 20px !important;
-}
+    .nav-right {
+        margin: 0 !important;
+    }
 
-.video-card {
-    margin-bottom: 20px !important;
-}
+    .container {
+        margin-top: 60px !important;
+    }
 
-.video-info {
-    padding: 12px !important;
-}
+    .search-box {
+        padding: 8px 12px !important;
+    }
 
-.video-info h3 {
-    font-size: 16px !important;
-    margin-bottom: 8px !important;
-}
+    .search-box input {
+        font-size: 16px !important;
+        padding: 8px !important;
+    }
 
-.video-info p {
-    font-size: 14px !important;
-    margin-bottom: 4px !important;
+    .video-grid {
+        gap: 20px !important;
+        padding: 20px !important;
+    }
+
+    .video-card {
+        margin-bottom: 20px !important;
+    }
+
+    .video-info {
+        padding: 12px !important;
+    }
+
+    .video-info h3 {
+        font-size: 16px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .video-info p {
+        font-size: 14px !important;
+        margin-bottom: 4px !important;
+    }
 }
 
 /* Support Tagline */
@@ -1864,8 +2118,8 @@ body {
     }
 }
 
-/* Mobile-first media queries */
-@media (max-width: 768px) {
+/* Mobile-first media queries - Exclude iPad Mini range */
+@media (max-width: 767px) {
     .navbar {
         padding: 6px 10px;
         height: auto;
@@ -2433,7 +2687,7 @@ body {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     .video-grid {
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 15px;
@@ -2466,7 +2720,7 @@ body {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     #cid0020000405651970254 {
         display: none !important;
     }
@@ -2479,7 +2733,7 @@ body {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     .content {
         padding-right: 20px;
     }
@@ -2537,7 +2791,7 @@ body {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     /* Show mobile controls */
     .mobile-menu-toggle,
     .mobile-queue-toggle {
@@ -2961,7 +3215,7 @@ body {
 }
 
 /* Mobile-specific improvements */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     /* Prevent text selection on mobile */
     .video-card,
     .control-button,
